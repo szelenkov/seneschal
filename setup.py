@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# # -*- coding: utf-8 -*-
+# -*- coding: UTF-8 -*-
 '''
 Setup
 '''
@@ -22,3 +22,4 @@ setup(name='Distutils',
       url='https://www.python.org/sigs/distutils-sig/',
       packages=['distutils', 'distutils.command'],
      )
+     
