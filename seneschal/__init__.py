@@ -1,4 +1,3 @@
-#!/usr/bin/env python
+#!python -u
 # -*- coding: utf-8 -*-
 ''' init for module '''
-import pytest

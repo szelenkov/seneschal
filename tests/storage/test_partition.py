@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!python -u
 # -*- coding: utf-8 -*-
 # pylint: disable=W0621
 ''' Partition tests '''
