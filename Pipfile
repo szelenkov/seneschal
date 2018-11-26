@@ -4,9 +4,23 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+pylint = "*"
+flask-debugtoolbar = "*"
+v = {editable = true,version = "*"}
 
 [packages]
+rdflib = "*"
 requests = "*"
+Flask = "*"
+python-dotenv = "*"
+cefpython3 = "*"
+gunicorn = "*"
+Flask-SQLAlchemy = "*"
+Flask-Migrate = "*"
+"psycopg2" = "*"
+Flask-SSLify = "*"
+flask-sslify = "*"
+v = {editable = true,version = "*"}
 
 [requires]
 python_version = "3.6"

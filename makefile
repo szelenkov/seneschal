@@ -1,5 +1,5 @@
 init:
-    pip install -r requirements.txt
+    pipenv install -e
 
 test:
     py.test tests
