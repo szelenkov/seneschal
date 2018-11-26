@@ -6,7 +6,6 @@ verify_ssl = true
 [dev-packages]
 pylint = "*"
 flask-debugtoolbar = "*"
-v = {editable = true,version = "*"}
 
 [packages]
 rdflib = "*"
@@ -17,9 +16,11 @@ cefpython3 = "*"
 gunicorn = "*"
 Flask-SQLAlchemy = "*"
 Flask-Migrate = "*"
+flask-restplus = "*"
 "psycopg2" = "*"
 Flask-SSLify = "*"
 flask-sslify = "*"
+Werkzeug = "*"
 v = {editable = true,version = "*"}
 
 [requires]

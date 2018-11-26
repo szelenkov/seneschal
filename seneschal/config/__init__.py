@@ -3,8 +3,9 @@
 """
     Configuration
 """
+import os
 import sqlite3
-from os import environ, system
+from os import environ, system as system_name
 from os.path import join, abspath, dirname
 
 BASEDIR = abspath(dirname(__file__))
@@ -31,7 +32,7 @@ class Config(object):
     def workspaces(self):
         '''workspaces generator'''
         global_data_path = join({'Windows' : environ.get('ProgramData') or 'C:\\ProgramData',
-                                 'Linux' : '/usr/share'}.get(system, default=None), 'seneschal')
+                                 'Linux' : '/usr/share'}.get(system_name, default=None), 'seneschal')
 
         conn = sqlite3.connect(join(global_data_path, 'example.db'))
         conn.isolation_level = None

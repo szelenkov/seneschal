@@ -11,8 +11,14 @@ with app the package (from which we import the views module).
 import sys
 import os
 
+from seneschal.config import Config
+
 def create_app():
     '''app'''
+
+    for workspace in Config().workspaces:
+        if workspace.is_default:
+            pass
 
     from flask import Flask
     # from flask_sqlalchemy import SQLAlchemy
