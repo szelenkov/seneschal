@@ -32,7 +32,7 @@ class Config(object):
         '''workspaces generator'''
         global_data_path = join({'Windows' : environ.get('ProgramData') or 'C:\\ProgramData',
                                  'Linux' : '/usr/share'}.get(system, default=None), 'seneschal')
-                                 
+
         conn = sqlite3.connect(join(global_data_path, 'example.db'))
         conn.isolation_level = None
         try:
