@@ -6,6 +6,10 @@ verify_ssl = true
 [dev-packages]
 pylint = "*"
 flask-debugtoolbar = "*"
+autopep8 = "*"
+pytest = "*"
+ptvsd = "*"
+v = {editable = true,version = "*"}
 
 [packages]
 rdflib = "*"
@@ -22,6 +26,8 @@ Flask-SSLify = "*"
 flask-sslify = "*"
 Werkzeug = "*"
 v = {editable = true,version = "*"}
+epydoc = "*"
+cx-freeze = "*"
 
 [requires]
 python_version = "3.6"

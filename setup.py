@@ -36,6 +36,7 @@ REQUIRED_PYTHON_VER = (3, 6, 5)
 GITHUB_URL = "https://github.com/szelenkov/seneschal"
 HERE = abspath(dirname(__file__))
 
+
 class PyTest(TestCommand):
     '''
     Setup test class
@@ -92,13 +93,13 @@ with open("README.md", "r") as fh:
               'Topic :: Software Development',
               'Topic :: Text Editors',
               'Topic :: Text Processing',
-              ],
-          cmdclass={'install': clean,
-                    'pytest': PyTest},
-          entry_points={
-              'console_scripts': ['seneschal=seneschal.core.run:run'],
-              'gui_scripts': ['seneschal=seneschal.core.run:run']
-              },
+          ],
+          cmdclass={'install': clean, 'pytest': PyTest},
+          entry_points="""
+              # -*- Entry points: -*-
+              [console_scripts]
+              seneschal=seneschal:main
+              """,
           # becomes 'Summary' in pkg-info
           description='An IDE, PIM and Outliner',
           download_url='http://leoeditor.com/download.html',
@@ -127,10 +128,12 @@ with open("README.md", "r") as fh:
               'Discord': 'https://discordapp.com/invite/c5DvZ4e',
               'Forum': 'https://community.home-assistant.io/'
           },
-          py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
-          python_requires='>={}'.format('.'.join(map(str, REQUIRED_PYTHON_VER))),
-          #semantic_version here to force download and making available before installing Leo
-          #Is also in `user_requires` so pip installs it too for general use
+          py_modules=[splitext(basename(path))[0]
+                      for path in glob('src/*.py')],
+          python_requires='>={}'.format(
+              '.'.join(map(str, REQUIRED_PYTHON_VER))),
+          # semantic_version here to force download and making available before installing Leo
+          # Is also in `user_requires` so pip installs it too for general use
           setup_requires=['semantic_version', 'pytest-runner'],
           tests_require=['pytest'],
           url='https://www.python.org/sigs/distutils-sig/',
