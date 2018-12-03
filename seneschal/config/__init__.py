@@ -3,10 +3,9 @@
 """
     Configuration
 """
-import os
 import sqlite3
-from os import environ, system as system_name
-from os.path import join, abspath, dirname
+from os import name, getenv, makedirs
+from os.path import join, abspath, dirname, exists
 
 BASEDIR = abspath(dirname(__file__))
 
@@ -21,8 +20,7 @@ class Config(object):
     UPDATE_URLS = ['']
     MAX_DOWNLOAD_RETRIES = 3
 
-    SQLALCHEMY_DATABASE_URI = environ.get('DATABASE_URL') or \
-        'sqlite:///' + join(BASEDIR, 'app.db')
+    SQLALCHEMY_DATABASE_URI = getenv('DATABASE_URL', 'sqlite:///' + join(BASEDIR, 'app.db'))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     def __init__(self):
@@ -31,9 +29,15 @@ class Config(object):
     @property
     def workspaces(self):
         '''workspaces generator'''
-        global_data_path = join({'Windows' : environ.get('ProgramData') or 'C:\\ProgramData',
-                                 'Linux' : '/usr/share'}.get(system_name, default=None), 'seneschal')
+        import configparser
 
+        global_data_path = join({'nt' : getenv('ProgramData', 'C:\\ProgramData'),
+                                 'posix' : '/usr/share'}.get(name), 'seneschal')
+        if not exists(directory):
+            makedirs(directory)
+
+        config = configparser.ConfigParser()
+        config.read('config.ini')
         conn = sqlite3.connect(join(global_data_path, 'example.db'))
         conn.isolation_level = None
         try:
