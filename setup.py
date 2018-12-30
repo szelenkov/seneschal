@@ -36,7 +36,6 @@ REQUIRED_PYTHON_VER = (3, 6, 5)
 GITHUB_URL = "https://github.com/szelenkov/seneschal"
 HERE = abspath(dirname(__file__))
 
-
 class PyTest(TestCommand):
     '''
     Setup test class
@@ -66,7 +65,7 @@ class PyTest(TestCommand):
 
 def clean():
     '''Removing build, dist and egg directories'''
-    print(__doc__)
+    print(clean.__doc__)
     root = dirname(realpath(__file__))
     for directory in ['build', 'dist', 'seneschal.egg-info', '.eggs']:
         dpath = join(root, directory)
@@ -107,7 +106,6 @@ with open("README.md", "r") as fh:
           include_package_data=True,
           install_requires=[
               'docutils', # used by Sphinx, rST plugin
-              'nbformat', # for Jupyter notebook integration
               'pylint', 'pyflakes', # coding syntax standards
               'pypandoc', # doc format conversion
               'sphinx', # rST plugin

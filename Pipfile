@@ -9,6 +9,9 @@ flask-debugtoolbar = "*"
 autopep8 = "*"
 pytest = "*"
 ptvsd = "*"
+tox = "*"
+doc8 = "*"
+epydoc = "*"
 v = {editable = true,version = "*"}
 
 [packages]
@@ -26,8 +29,8 @@ Flask-SSLify = "*"
 flask-sslify = "*"
 Werkzeug = "*"
 v = {editable = true,version = "*"}
-epydoc = "*"
 cx-freeze = "*"
+tox-pipenv = "*"
 
 [requires]
 python_version = "3.6"
