@@ -29,8 +29,10 @@ Flask-SSLify = "*"
 flask-sslify = "*"
 Werkzeug = "*"
 v = {editable = true,version = "*"}
-cx-freeze = "*"
 tox-pipenv = "*"
+tornado = "*"
+aiohttp = "*"
+pillow = "*"
 
 [requires]
-python_version = "3.6"
+python_version = "3.7"
