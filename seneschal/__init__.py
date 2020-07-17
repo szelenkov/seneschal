@@ -1,20 +1,20 @@
 #!python -u
 # -*- coding: utf-8 -*-
 #
-'''
+"""
 The script simply creates the application object and then imports
 the views module, which we haven't written yet.
 Do not confuse app the variable (which gets assigned the Flask instance)
 with app the package (from which we import the views module).
-'''
+"""
 
-import sys
 import os
 
 from seneschal.config import Config
 
+
 def create_app():
-    '''app'''
+    """app"""
 
     for workspace in Config().workspaces:
         if workspace.is_default:

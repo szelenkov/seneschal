@@ -23,3 +23,7 @@ tox-pipenv
 tornado
 aiohttp
 pillow
+wheel
+setuptools
+pip
+simplejson

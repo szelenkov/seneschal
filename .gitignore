@@ -103,3 +103,4 @@ ENV/
 
 .vscode
 .pyupdater
+.pytest_cache
