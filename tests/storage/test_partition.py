@@ -1,4 +1,4 @@
-#!python -u
+#!/usr/bin/env python -u
 # -*- coding: utf-8 -*-
 # py lint: disable=W0621
 """Partition tests."""

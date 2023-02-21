@@ -19,6 +19,7 @@ Copyright (C) Serhiy Zelenkov
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 Setup.
 
     pip install -e . -U -r requirements.txt
@@ -43,34 +44,28 @@ Usage:
 --------------------------------------------------------------------------.
     Help on available distribution formats: --help-formats
 """
-from glob import glob
 import sys
+from pathlib import Path
 
-# To use a consistent encoding
-from os.path import abspath, basename, dirname, isdir, join, realpath, splitext
-
-from shutil import rmtree
-
-# Always prefer setuptools over distutils
 from setuptools import setup, find_packages
 from setuptools.command.test import test as test_command
 
-
-#%%
+# %%
 __copyright__ = __doc__.split('\n')[3]
+__app__ = __doc__.split('\n')[1].split(' ')[-2]
 __author__ = ' '.join(__copyright__.split()[-2:])
 __credits__ = []  # type: list
-__license__ = 'MIT License'
+__license__ = 'Creative Commons Legal Code'
 __maintainer__ = __author__
-__email__ = 'zelenkov@gmail.com'
+__email__ = '@'.join([__author__.rsplit(" ", maxsplit=1)[1].lower(), 'gmail.com'])
 __status__ = 'Protoduction'
 __version_info__ = (0, 0, 1)
 __version__ = '.'.join(map(str, __version_info__))
 
-#%%
-REQUIRED_PYTHON_VER = (3, 6, 5)
-GITHUB_URL = 'https://github.com/szelenkov/seneschal'
-HERE = abspath(dirname(__file__))
+# %%
+REQUIRED_PYTHON_VER = (3, 10, 9)
+GITHUB_URL = f'https://github.com/s{__email__.split("@", maxsplit=1)[0]}/{__app__}'
+HERE = Path(__file__).parent.absolute()
 
 
 class PyTest(test_command):
@@ -103,21 +98,11 @@ class PyTest(test_command):
         sys.exit(error_no)
 
 
-def clean():
-    """Remove build, dist and egg directories."""
-    print(clean.__doc__)
-    root = dirname(realpath(__file__))
-    for directory in ['build', 'dist', 'seneschal.egg-info', '.eggs']:
-        dir_path = join(root, directory)
-        if isdir(dir_path):
-            rmtree(dir_path)
-
-
 if __name__ == '__main__':
-    clean()
+    # clean(None)
 
-    with open('README.md', 'r') as fh:
-        with open('requirements.txt') as f:
+    with open('README.md', 'r', encoding='utf-8') as fh:
+        with open('requirements.txt', 'r', encoding='utf-8') as f:
             # https://www.python.org/dev/peps/pep-0345/#fields
             setup(author=__author__,
                   author_email=__email__,
@@ -128,15 +113,14 @@ if __name__ == '__main__':
                       'Intended Audience :: End Users/Desktop',
                       'Intended Audience :: Developers',
                       'Libraries :: Python Modules',
-                      'License :: OSI Approved :: MIT License',
+                      f'License :: OSI Approved :: {__license__} License',
                       'Natural Language :: English',
                       'Operating System :: OS Independent',
                       'Programming Language :: Python',
                       'Programming Language :: Python :: 3',
-                      'Programming Language :: Python :: 3.7',
-                      'Programming Language :: Python :: 3.8',
-                      'Programming Language :: Python :: 3.9',
                       'Programming Language :: Python :: 3.10',
+                      'Programming Language :: Python :: 3.11',
+                      'Programming Language :: Python :: 3.12',
                       'Programming Language :: Python :: Implementation :: CPython',
                       'Programming Language :: Python :: Implementation :: PyPy',
                       'Topic :: Software Development',
@@ -144,23 +128,25 @@ if __name__ == '__main__':
                       'Topic :: Text Processing',
                       'Topic :: Utilities',
                   ],
-                  cmdclass={'install': clean, 'pytest': PyTest},
+                  cmdclass={'pytest': PyTest},
                   # becomes 'Summary' in pkg-info
                   description=__doc__.split('\n')[1],
                   download_url=f'{GITHUB_URL}/download.html',
-                  entry_points={
-                      'console_scripts': ('seneschal = seneschal:main'),
+                  entry_points={'console_scripts': (f'{__app__} = {__app__}:main',), },
+                  extras_require={
+                      'dev': ('pylint>=2.3.1',),
+                      'test': ('pytest', 'coverage',),
                   },
-                  extras_require={'test': ('pytest', 'coverage', ), },
                   # also include MANIFEST files in wheels
                   include_package_data=True,
-                  install_requires=f.read().splitlines(),
-                  keywords='seneschal',
+                  install_requires=(req for req in f.read().splitlines()
+                                    if req and not req.startswith('#')),
+                  keywords=__app__,
                   license=__license__,
                   long_description=fh.read(),
                   long_description_content_type='text/markdown',
-                  name='seneschal',
-                  packages=find_packages(),
+                  name=__app__,
+                  packages=find_packages(exclude=['tests*']),
                   package_data={},
                   package_dir={'': '.'},
                   platforms=['Linux', 'Windows', 'MacOS'],
@@ -169,15 +155,14 @@ if __name__ == '__main__':
                       'Bug Reports': f'{GITHUB_URL}/issues',
                       'Dev Docs': f'{GITHUB_URL}/devdoc'
                   },
-                  py_modules=[splitext(basename(path))[0]
-                              for path in glob('src/*.py')],
+                  py_modules=[__app__,],
                   python_requires=f'>={".".join(map(str, REQUIRED_PYTHON_VER))}',
                   # semantic_version here to force download and making available
                   # before installing Leo Is also in `user_requires` so pip installs
                   # it too for general use
                   setup_requires=('semantic_version', 'setuptools >= 53.0.0', 'pytest-runner'),
                   requires=f.read().splitlines(),
-                  tests_require=('pytest'),
+                  tests_require=('pytest',),
                   url=GITHUB_URL,
                   version=__version__,
                   zip_safe=False

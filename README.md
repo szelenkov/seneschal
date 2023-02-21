@@ -1,4 +1,4 @@
-# seneschal
+# Seneschal
 
 > A progressive webapp template.
 

@@ -633,10 +633,10 @@ class ClientHandler:
             print("Popups aren't implemented yet")
             return
 
-        #update buffer
+        # update buffer
         buffer = buffer.GetString(mode="bgra", origin="top-left")
 
-        #update texture of canvas rectangle
+        # update texture of canvas rectangle
         self.browserWidget.texture.blit_buffer(
             buffer,
             colorfmt='bgra',

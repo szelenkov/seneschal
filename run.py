@@ -1,43 +1,25 @@
-#!python -u
-# -*- coding: utf-8 -*-
-# pylama: ignore:E265
+#!/usr/bin/env python -u
+# -*- mode: python; coding: utf-8 -*-
+#
+# pylint: disable=no-name-in-module
 """
-[summary].
+Entry point.
 
-.
+Created on Feb 16, 2021
+
+@author: Serhiy
 """
-from kivy.app import App
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.label import Label
-from kivy.uix.textinput import TextInput
-from kivy.uix.button import Button
 
+import sys
+from view.main import MainWindow
 
-class LoginScreen(GridLayout):
-    """Login screen."""
-
-    def __init__(self, **kwargs):
-        """Initialize."""
-        super(LoginScreen, self).__init__(**kwargs)
-
-        self.cols = 2
-        self.rows = 2
-        self.add_widget(Label(text='User Name'))
-        self.username = TextInput(multiline=False)
-        self.add_widget(self.username)
-        self.add_widget(Label(text='password'))
-        self.password = TextInput(password=True, multiline=False)
-        self.add_widget(self.password)
-
-
-class MyApp(App):
-    """Awesome app class."""
-
-    def build(self):
-        self.title = 'Awesome app!!!'
-        # return LoginScreen()
-        return Button(text='ggg')
-
+from PySide2.QtWidgets import QApplication
 
 if __name__ == '__main__':
-    MyApp().run()
+
+    app = QApplication(sys.argv)
+
+    window = MainWindow()
+    window.show()
+
+    app.exec_()
