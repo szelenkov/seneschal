@@ -104,66 +104,65 @@ if __name__ == '__main__':
     with open('README.md', 'r', encoding='utf-8') as fh:
         with open('requirements.txt', 'r', encoding='utf-8') as f:
             # https://www.python.org/dev/peps/pep-0345/#fields
-            setup(author=__author__,
-                  author_email=__email__,
-                  # https://www.python.org/dev/peps/pep-0301/
-                  classifiers=[
-                      'Development Status :: 4 - Beta',
-                      'Environment :: Console',
-                      'Intended Audience :: End Users/Desktop',
-                      'Intended Audience :: Developers',
-                      'Libraries :: Python Modules',
-                      f'License :: OSI Approved :: {__license__} License',
-                      'Natural Language :: English',
-                      'Operating System :: OS Independent',
-                      'Programming Language :: Python',
-                      'Programming Language :: Python :: 3',
-                      'Programming Language :: Python :: 3.10',
-                      'Programming Language :: Python :: 3.11',
-                      'Programming Language :: Python :: 3.12',
-                      'Programming Language :: Python :: Implementation :: CPython',
-                      'Programming Language :: Python :: Implementation :: PyPy',
-                      'Topic :: Software Development',
-                      'Topic :: Text Editors',
-                      'Topic :: Text Processing',
-                      'Topic :: Utilities',
-                  ],
-                  cmdclass={'pytest': PyTest},
-                  # becomes 'Summary' in pkg-info
-                  description=__doc__.split('\n')[1],
-                  download_url=f'{GITHUB_URL}/download.html',
-                  entry_points={'console_scripts': (f'{__app__} = {__app__}:main',), },
-                  extras_require={
-                      'dev': ('pylint>=2.3.1',),
-                      'test': ('pytest', 'coverage',),
-                  },
-                  # also include MANIFEST files in wheels
-                  include_package_data=True,
-                  install_requires=(req for req in f.read().splitlines()
-                                    if req and not req.startswith('#')),
-                  keywords=__app__,
-                  license=__license__,
-                  long_description=fh.read(),
-                  long_description_content_type='text/markdown',
-                  name=__app__,
-                  packages=find_packages(exclude=['tests*']),
-                  package_data={},
-                  package_dir={'': '.'},
-                  platforms=['Linux', 'Windows', 'MacOS'],
-                  # List additional URLs that are relevant to project as a dict.
-                  project_urls={
-                      'Bug Reports': f'{GITHUB_URL}/issues',
-                      'Dev Docs': f'{GITHUB_URL}/devdoc'
-                  },
-                  py_modules=[__app__,],
-                  python_requires=f'>={".".join(map(str, REQUIRED_PYTHON_VER))}',
-                  # semantic_version here to force download and making available
-                  # before installing Leo Is also in `user_requires` so pip installs
-                  # it too for general use
-                  setup_requires=('semantic_version', 'setuptools >= 53.0.0', 'pytest-runner'),
-                  requires=f.read().splitlines(),
-                  tests_require=('pytest',),
-                  url=GITHUB_URL,
-                  version=__version__,
-                  zip_safe=False
-                  )
+            setup(
+                author=__author__,
+                author_email=__email__,
+                # https://www.python.org/dev/peps/pep-0301/
+                classifiers=[
+                    'Development Status :: 4 - Beta',
+                    'Environment :: Console',
+                    'Intended Audience :: End Users/Desktop',
+                    'Intended Audience :: Developers',
+                    'Libraries :: Python Modules',
+                    f'License :: OSI Approved :: {__license__} License',
+                    'Natural Language :: English',
+                    'Operating System :: OS Independent',
+                    'Programming Language :: Python',
+                    'Programming Language :: Python :: 3',
+                    'Programming Language :: Python :: 3.10',
+                    'Programming Language :: Python :: 3.11',
+                    'Programming Language :: Python :: 3.12',
+                    'Programming Language :: Python :: Implementation :: CPython',
+                    'Programming Language :: Python :: Implementation :: PyPy',
+                    'Topic :: Software Development',
+                    'Topic :: Text Editors',
+                    'Topic :: Text Processing',
+                    'Topic :: Utilities'
+                ],
+                cmdclass={'pytest': PyTest},
+                # becomes 'Summary' in pkg-info
+                description=__doc__.split('\n')[1],
+                download_url=f'{GITHUB_URL}/download.html',
+                entry_points={'console_scripts': (f'{__app__} = {__app__}:main',), },
+                extras_require={
+                    'dev': ('pylint>=2.3.1',),
+                    'test': ('pytest', 'coverage',),
+                },
+                # also include MANIFEST files in wheels
+                include_package_data=True,
+                install_requires=(req for req in f.read().splitlines() if req and not req.startswith('#')),
+                keywords=__app__,
+                license=__license__,
+                long_description=fh.read(),
+                long_description_content_type='text/markdown',
+                name=__app__,
+                packages=find_packages(exclude=['tests*']),
+                package_data={},
+                package_dir={'': '.'},
+                platforms=['Linux', 'Windows', 'MacOS'],
+                # List additional URLs that are relevant to project as a dict.
+                project_urls={
+                    'Bug Reports': f'{GITHUB_URL}/issues',
+                    'Dev Docs': f'{GITHUB_URL}/devdoc'
+                },
+                py_modules=[__app__],
+                python_requires=f'>={".".join(map(str, REQUIRED_PYTHON_VER))}',
+                # semantic_version here to force download and making available before installing
+                # Is also in `user_requires` so pip installs it too for general use
+                setup_requires=('semantic_version', 'setuptools >= 53.0.0', 'pytest-runner'),
+                requires=f.read().splitlines(),
+                tests_require=('pytest', ),
+                url=GITHUB_URL,
+                version=__version__,
+                zip_safe=False
+            )

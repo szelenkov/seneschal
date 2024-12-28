@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=64.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "seneschal-python"
+version = "0.1.0"
+description = "Python port of Seneschal database management tool"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "GPL-2.0-or-later"}
+dependencies = [
+    "PyQt6>=6.5.0",
+    "SQLAlchemy>=2.0.0",
+    "mysql-connector-python>=8.0.0",
+    "psycopg2-binary>=2.9.0",
+    "pyodbc>=4.0.0",
+    "cryptography>=41.0.0",
+    "python-dotenv>=1.0.0",
+    "qtawesome>=1.2.0"
+]
+
+[project.scripts]
+seneschal-python = "seneschal.main:main"
+
+[tool.setuptools]
+packages = ["seneschal"]
+
+[tool.setuptools.package-data]
+seneschal = ["**/*.ui", "**/*.qss", "**/*.png", "**/*.ico"]
