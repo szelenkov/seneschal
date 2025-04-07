@@ -1,14 +1,15 @@
+import tkinter as tk
+import tkinter.messagebox as messagebox
+import configparser
+import tkinter.simpledialog as simpledialog
+
 import os
 import json
 from datetime import datetime
-from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, 
-                           QPushButton, QListWidget, QInputDialog,
-                           QMessageBox)
-from PyQt6.QtCore import QSettings
 
 class QueryManager:
     def __init__(self):
-        self.settings = QSettings('Seneschal', 'Python')
+        self.settings = configparser.ConfigParser()
         self.query_file = os.path.join(
             os.path.expanduser('~'),
             '.seneschal',
@@ -74,7 +75,7 @@ class QueryManager:
         """Get list of saved queries"""
         return list(self.load_queries().keys())
 
-class QueryManagerDialog(QDialog):
+class QueryManagerDialog(tk.Toplevel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.query_manager = QueryManager()
@@ -82,95 +83,77 @@ class QueryManagerDialog(QDialog):
         self.load_queries()
         
     def setup_ui(self):
-        self.setWindowTitle("Query Manager")
-        self.resize(400, 300)
+        self.title("Query Manager")
+        self.geometry("400x300")
         
-        layout = QVBoxLayout(self)
+        layout = tk.Frame(self)
+        layout.pack(fill=tk.BOTH, expand=True)
         
         # Query list
-        self.query_list = QListWidget()
-        self.query_list.itemDoubleClicked.connect(self.load_selected_query)
-        layout.addWidget(self.query_list)
+        self.query_list = tk.Listbox(layout)
+        self.query_list.pack(fill=tk.BOTH, expand=True)
+        self.query_list.bind('<Double-1>', self.load_selected_query)
         
         # Buttons
-        button_layout = QHBoxLayout()
+        button_layout = tk.Frame(layout)
+        button_layout.pack(fill=tk.X)
         
-        self.new_button = QPushButton("New")
-        self.new_button.clicked.connect(self.new_query)
-        button_layout.addWidget(self.new_button)
+        self.new_button = tk.Button(button_layout, text="New", command=self.new_query)
+        self.new_button.pack(side=tk.LEFT, expand=True)
         
-        self.load_button = QPushButton("Load")
-        self.load_button.clicked.connect(self.load_selected_query)
-        button_layout.addWidget(self.load_button)
+        self.load_button = tk.Button(button_layout, text="Load", command=self.load_selected_query_button)
+        self.load_button.pack(side=tk.LEFT, expand=True)
         
-        self.delete_button = QPushButton("Delete")
-        self.delete_button.clicked.connect(self.delete_selected_query)
-        button_layout.addWidget(self.delete_button)
+        self.delete_button = tk.Button(button_layout, text="Delete", command=self.delete_selected_query)
+        self.delete_button.pack(side=tk.LEFT, expand=True)
         
-        self.close_button = QPushButton("Close")
-        self.close_button.clicked.connect(self.close)
-        button_layout.addWidget(self.close_button)
-        
-        layout.addLayout(button_layout)
+        self.close_button = tk.Button(button_layout, text="Close", command=self.destroy)
+        self.close_button.pack(side=tk.LEFT, expand=True)
         
     def load_queries(self):
         """Load saved queries into the list"""
-        self.query_list.clear()
-        self.query_list.addItems(self.query_manager.get_query_list())
+        self.query_list.delete(0, tk.END)
+        for query in self.query_manager.get_query_list():
+            self.query_list.insert(tk.END, query)
         
     def new_query(self):
         """Create a new saved query"""
-        name, ok = QInputDialog.getText(
-            self,
-            "New Query",
-            "Enter name for the query:"
-        )
-        if ok and name:
-            sql, ok = QInputDialog.getMultiLineText(
-                self,
-                "New Query",
-                "Enter SQL query:"
-            )
-            if ok and sql:
+        name = simpledialog.askstring("New Query", "Enter name for the query:")
+        if name:
+            sql = simpledialog.askstring("New Query", "Enter SQL query:", initialvalue="SELECT * FROM ")
+            if sql:
                 if self.query_manager.save_query(name, sql):
                     self.load_queries()
                 else:
-                    QMessageBox.critical(
-                        self,
-                        "Error",
-                        "Failed to save query"
-                    )
+                    messagebox.showerror("Error", "Failed to save query")
                     
-    def load_selected_query(self):
+    def load_selected_query_button(self):
+        """Load the selected query from button click"""
+        selection = self.query_list.curselection()
+        if selection:
+            self.load_selected_query(None)
+                    
+    def load_selected_query(self, event=None):
         """Load the selected query"""
-        current = self.query_list.currentItem()
-        if current:
-            sql = self.query_manager.load_query(current.text())
+        selection = self.query_list.curselection()
+        if selection:
+            current = self.query_list.get(selection[0])
+            sql = self.query_manager.load_query(current)
             if sql:
                 # Emit signal or call callback to load query in editor
-                self.parent().load_query(sql)
-                self.accept()
+                if hasattr(self.master, 'load_query'):
+                    self.master.load_query(sql)
+                self.destroy()
             else:
-                QMessageBox.critical(
-                    self,
-                    "Error",
-                    "Failed to load query"
-                )
+                messagebox.showerror("Error", "Failed to load query")
                 
     def delete_selected_query(self):
         """Delete the selected query"""
-        current = self.query_list.currentItem()
-        if current:
-            if QMessageBox.question(
-                self,
-                "Confirm Delete",
-                f"Delete query '{current.text()}'?"
-            ) == QMessageBox.StandardButton.Yes:
-                if self.query_manager.delete_query(current.text()):
+        selection = self.query_list.curselection()
+        if selection:
+            current = self.query_list.get(selection[0])
+            if messagebox.askyesno("Confirm Delete", f"Delete query '{current}'?"):
+                if self.query_manager.delete_query(current):
                     self.load_queries()
                 else:
-                    QMessageBox.critical(
-                        self,
-                        "Error",
-                        "Failed to delete query"
-                    )
+                    messagebox.showerror("Error", "Failed to delete query")

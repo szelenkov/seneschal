@@ -1,236 +1,108 @@
-from PyQt6.QtGui import QPalette, QColor, QSyntaxHighlighter, QTextCharFormat
-from PyQt6.QtCore import Qt
+import tkinter.ttk as ttk
+import tkinter.font as tkfont
+import threading
 
 from .settings_manager import SettingsManager
 
-class SQLHighlighter(QSyntaxHighlighter):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.theme_colors = {}
-        self.update_theme()
-
-    def update_theme(self):
-        settings = SettingsManager()
-        self.theme_colors = settings.get_theme_colors()
-        
-        # Keywords
-        self.keyword_format = QTextCharFormat()
-        self.keyword_format.setForeground(self.theme_colors['keyword'])
-        self.keyword_format.setFontWeight(700)  # Bold
-        
-        # String literals
-        self.string_format = QTextCharFormat()
-        self.string_format.setForeground(self.theme_colors['string'])
-        
-        # Number literals
-        self.number_format = QTextCharFormat()
-        self.number_format.setForeground(self.theme_colors['number'])
-        
-        # Comments
-        self.comment_format = QTextCharFormat()
-        self.comment_format.setForeground(self.theme_colors['comment'])
-        self.comment_format.setFontItalic(True)
-        
-        # SQL Keywords
-        self.keywords = [
-            'SELECT', 'FROM', 'WHERE', 'INSERT', 'UPDATE', 'DELETE',
-            'CREATE', 'ALTER', 'DROP', 'TABLE', 'INDEX', 'VIEW',
-            'GROUP BY', 'ORDER BY', 'HAVING', 'JOIN', 'LEFT', 'RIGHT',
-            'INNER', 'OUTER', 'ON', 'AS', 'AND', 'OR', 'NOT', 'IN',
-            'LIKE', 'BETWEEN', 'IS', 'NULL', 'ASC', 'DESC', 'DISTINCT',
-            'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'UNION', 'ALL',
-            'LIMIT', 'OFFSET', 'TOP', 'CONSTRAINT', 'PRIMARY KEY',
-            'FOREIGN KEY', 'REFERENCES', 'CASCADE', 'SET NULL',
-            'DEFAULT', 'AUTO_INCREMENT', 'UNIQUE', 'CHECK'
-        ]
-
-    def highlightBlock(self, text):
-        # Keywords
-        for keyword in self.keywords:
-            index = text.upper().find(keyword)
-            while index >= 0:
-                length = len(keyword)
-                # Check if it's a whole word
-                if (index == 0 or not text[index-1].isalnum()) and \
-                   (index + length >= len(text) or not text[index + length].isalnum()):
-                    self.setFormat(index, length, self.keyword_format)
-                index = text.upper().find(keyword, index + length)
-
-        # Strings (single quotes)
-        in_string = False
-        start_pos = 0
-        for i, char in enumerate(text):
-            if char == "'":
-                if not in_string:
-                    start_pos = i
-                    in_string = True
-                else:
-                    length = i - start_pos + 1
-                    self.setFormat(start_pos, length, self.string_format)
-                    in_string = False
-
-        # Numbers
-        import re
-        for match in re.finditer(r'\b\d+(\.\d+)?\b', text):
-            self.setFormat(match.start(), match.end() - match.start(), 
-                         self.number_format)
-
-        # Single-line comments
-        if '--' in text:
-            comment_pos = text.find('--')
-            self.setFormat(comment_pos, len(text) - comment_pos, 
-                         self.comment_format)
-
-        # Multi-line comments
-        start_pos = text.find('/*')
-        if start_pos >= 0:
-            end_pos = text.find('*/', start_pos)
-            if end_pos >= 0:
-                self.setFormat(start_pos, end_pos - start_pos + 2, 
-                             self.comment_format)
-            else:
-                self.setFormat(start_pos, len(text) - start_pos, 
-                             self.comment_format)
-
 class ThemeManager:
-    @staticmethod
-    def apply_theme(app):
-        settings = SettingsManager()
-        theme_colors = settings.get_theme_colors()
-        
-        palette = QPalette()
-        
-        # Set the color scheme
-        palette.setColor(QPalette.ColorRole.Window, 
-                        theme_colors['background'])
-        palette.setColor(QPalette.ColorRole.WindowText, 
-                        theme_colors['foreground'])
-        palette.setColor(QPalette.ColorRole.Base, 
-                        theme_colors['background'])
-        palette.setColor(QPalette.ColorRole.AlternateBase,
-                        theme_colors['background'].lighter(110))
-        palette.setColor(QPalette.ColorRole.Text, 
-                        theme_colors['foreground'])
-        palette.setColor(QPalette.ColorRole.Button, 
-                        theme_colors['background'])
-        palette.setColor(QPalette.ColorRole.ButtonText, 
-                        theme_colors['foreground'])
-        palette.setColor(QPalette.ColorRole.Highlight, 
-                        theme_colors['selection'])
-        palette.setColor(QPalette.ColorRole.HighlightedText,
-                        theme_colors['foreground'])
-        palette.setColor(QPalette.ColorRole.Link, 
-                        QColor('#0000ff') if settings.get('general/theme') == 'Light'
-                        else QColor('#1a8cff'))
-        
-        # Apply the palette
-        app.setPalette(palette)
-        
-        # Set stylesheet for custom widgets
-        app.setStyleSheet("""
-            QTabWidget::pane {
-                border: 1px solid %s;
-            }
-            QTabBar::tab {
-                background: %s;
-                color: %s;
-                padding: 5px;
-                border: 1px solid %s;
-            }
-            QTabBar::tab:selected {
-                background: %s;
-                border-bottom: none;
-            }
-            QTreeView {
-                background-color: %s;
-                color: %s;
-            }
-            QTreeView::item:selected {
-                background-color: %s;
-            }
-            QTableView {
-                gridline-color: %s;
-            }
-            QHeaderView::section {
-                background-color: %s;
-                color: %s;
-                padding: 4px;
-                border: 1px solid %s;
-            }
-            QToolBar {
-                border: none;
-                background: %s;
-            }
-            QStatusBar {
-                background: %s;
-                color: %s;
-            }
-            QLineEdit, QSpinBox, QComboBox {
-                background: %s;
-                color: %s;
-                border: 1px solid %s;
-                padding: 2px;
-            }
-            QPushButton {
-                background: %s;
-                color: %s;
-                border: 1px solid %s;
-                padding: 5px 10px;
-            }
-            QPushButton:hover {
-                background: %s;
-            }
-            QMenu {
-                background-color: %s;
-                color: %s;
-            }
-            QMenu::item:selected {
-                background-color: %s;
-            }
-        """ % (
-            theme_colors['foreground'].name(),
-            theme_colors['background'].name(),
-            theme_colors['foreground'].name(),
-            theme_colors['foreground'].name(),
-            theme_colors['background'].lighter(110).name(),
-            theme_colors['background'].name(),
-            theme_colors['foreground'].name(),
-            theme_colors['selection'].name(),
-            theme_colors['foreground'].darker(140).name(),
-            theme_colors['background'].darker(110).name(),
-            theme_colors['foreground'].name(),
-            theme_colors['foreground'].name(),
-            theme_colors['background'].name(),
-            theme_colors['background'].name(),
-            theme_colors['foreground'].name(),
-            theme_colors['background'].name(),
-            theme_colors['foreground'].name(),
-            theme_colors['foreground'].name(),
-            theme_colors['background'].name(),
-            theme_colors['foreground'].name(),
-            theme_colors['foreground'].name(),
-            theme_colors['background'].lighter(110).name(),
-            theme_colors['background'].name(),
-            theme_colors['foreground'].name(),
-            theme_colors['selection'].name()
-        ))
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            with ThemeManager._lock:
+                if not cls._instance:
+                    cls._instance = super(ThemeManager, cls).__new__(cls, *args, **kwargs)
+        return cls._instance
+
+    def __init__(self):
+        self.settings = SettingsManager()
+        self.current_theme = self.settings.get('general/theme', 'Light')
+        self.theme_colors = self.settings.get_theme_colors()
 
     @staticmethod
-    def get_editor_style():
-        settings = SettingsManager()
-        theme_colors = settings.get_theme_colors()
-        
-        return f"""
-            QPlainTextEdit {{
-                background-color: {theme_colors['background'].name()};
-                color: {theme_colors['foreground'].name()};
-                selection-background-color: {theme_colors['selection'].name()};
-                selection-color: {theme_colors['foreground'].name()};
-            }}
-            QLineNumber {{
-                background-color: {theme_colors['background'].darker(105).name()};
-                color: {theme_colors['line_number'].name()};
-                border-right: 1px solid {theme_colors['foreground'].name()};
-                padding: 0 5px;
-            }}
+    def apply_theme(root=None):
         """
+        Apply theme to the entire application
+        
+        :param root: Main Tkinter root or Toplevel window
+        """
+        # Configure global style
+        style = ttk.Style()
+        this = ThemeManager()
+        # Define theme colors
+        bg = this.theme_colors['background']
+        fg = this.theme_colors['foreground']
+        selection = this.theme_colors['selection']
+        current_line = this.theme_colors['current_line']
+        
+        # Configure global style for different widget types
+        style.configure('TFrame', background=bg)
+        style.configure('TLabel', background=bg, foreground=fg)
+        style.configure('TButton', background=bg, foreground=fg)
+        style.configure('TEntry', background=bg, foreground=fg, fieldbackground=bg)
+        style.configure('TCombobox', background=bg, foreground=fg)
+        style.configure('Treeview', background=bg, foreground=fg, fieldbackground=bg)
+        style.configure('Treeview.Heading', background=current_line, foreground=fg)
+        
+        # Scrollbar theme
+        style.configure('TScrollbar', background=bg)
+        
+        # Menu theme
+        style.configure('TMenubutton', background=bg, foreground=fg)
+        
+        # Notebook (Tabs) theme
+        style.configure('TNotebook', background=bg)
+        style.configure('TNotebook.Tab', background=current_line, foreground=fg)
+        style.map('TNotebook.Tab', 
+            background=[('selected', selection)],
+            foreground=[('selected', fg)]
+        )
+        
+        # If a root window is provided, configure its colors
+        if root:
+            root.configure(
+                bg=bg,
+                highlightbackground=bg,
+                highlightcolor=fg
+            )
+        
+        # Optional: Configure default font
+        default_font = tkfont.nametofont("TkDefaultFont")
+        default_font.configure(
+            family=this.settings.get('editor/font_family', 'Consolas'),
+            size=this.settings.get('editor/font_size', 10)
+        )
+
+    def get_syntax_colors(self):
+        """
+        Get syntax highlighting colors for code editors
+        
+        :return: Dictionary of syntax highlighting colors
+        """
+        return {
+            'keyword': self.theme_colors['keyword'],
+            'string': self.theme_colors['string'],
+            'number': self.theme_colors['number'],
+            'comment': self.theme_colors['comment']
+        }
+
+    def add_theme_listener(self):
+        """
+        Add a listener to detect theme changes
+        """
+        def on_theme_change(section, key, value):
+            if section == 'general' and key == 'theme':
+                self.current_theme = value
+                self.theme_colors = self.settings.get_theme_colors()
+                # Optionally, trigger a full theme reapplication
+                self.apply_theme()
+        
+        self.settings.add_change_listener(on_theme_change)
+
+    def toggle_theme(self):
+        """
+        Toggle between light and dark themes
+        """
+        new_theme = 'Dark' if self.current_theme == 'Light' else 'Light'
+        self.settings.set('general/theme', new_theme)

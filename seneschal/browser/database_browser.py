@@ -1,176 +1,208 @@
-from PyQt6.QtWidgets import (QTreeView, QMenu, QMessageBox, QInputDialog)
-from PyQt6.QtGui import QStandardItemModel, QStandardItem
-from PyQt6.QtCore import Qt, pyqtSignal
 import logging
+import tkinter as tk
+import tkinter.messagebox as messagebox
+import tkinter.ttk as ttk
 
-class DatabaseBrowser(QTreeView):
-    item_selected = pyqtSignal(str, str)  # type, name
-    
+
+class DatabaseBrowser(ttk.Treeview):
     def __init__(self, parent=None, connection=None):
-        super().__init__(parent)
+        super().__init__(parent, columns=("Database Objects",), show="tree")
         self.connection = connection
+        self.heading("#0", text="Database Objects")
+        
+        # Custom event handling
+        self.bind('<<TreeviewSelect>>', self.on_item_selected)
+        
+        # Context menu
+        self.context_menu = tk.Menu(self, tearoff=0)
+        self.bind('<Button-3>', self.show_context_menu)
+        
         self.setup_ui()
-        
+    
     def setup_ui(self):
-        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.customContextMenuRequested.connect(self.show_context_menu)
+        # Configure columns
+        self.column("#0", width=300, stretch=tk.YES)
         
-        self.model = QStandardItemModel()
-        self.model.setHorizontalHeaderLabels(["Database Objects"])
-        self.setModel(self.model)
-        
-        # Enable selection
-        self.setSelectionMode(QTreeView.SelectionMode.SingleSelection)
-        self.clicked.connect(self.on_item_clicked)
-        
+        # Populate initial tree structure if connection exists
+        if self.connection and getattr(self.connection, 'connected', False):
+            self.refresh_databases()
+    
     def refresh_databases(self):
-        if not self.connection or not self.connection.connected:
-            return
-            
-        self.model.clear()
-        self.model.setHorizontalHeaderLabels(["Database Objects"])
+        """Refresh the list of databases and their objects"""
+        # Clear existing items
+        for item in self.get_children():
+            self.delete(item)
         
         try:
-            # Get list of databases using the connection's method
+            # Get list of databases
             databases = self.connection.get_databases()
             
             for db_name in databases:
-                db_item = QStandardItem(db_name)
-                db_item.setData("database", Qt.ItemDataRole.UserRole)
+                # Add database as a top-level item
+                db_id = self.insert('', 'end', text=db_name, open=False, tags=('database',))
                 
                 # Add standard folders for each database
-                tables_folder = QStandardItem("Tables")
-                tables_folder.setData("tables_folder", Qt.ItemDataRole.UserRole)
+                folders = [
+                    ("Tables", "tables_folder"),
+                    ("Views", "views_folder"),
+                    ("Stored Procedures", "procedures_folder"),
+                    ("Functions", "functions_folder"),
+                    ("Triggers", "triggers_folder")
+                ]
                 
-                views_folder = QStandardItem("Views")
-                views_folder.setData("views_folder", Qt.ItemDataRole.UserRole)
-                
-                procedures_folder = QStandardItem("Stored Procedures")
-                procedures_folder.setData("procedures_folder", Qt.ItemDataRole.UserRole)
-                
-                functions_folder = QStandardItem("Functions")
-                functions_folder.setData("functions_folder", Qt.ItemDataRole.UserRole)
-                
-                triggers_folder = QStandardItem("Triggers")
-                triggers_folder.setData("triggers_folder", Qt.ItemDataRole.UserRole)
-                
-                db_item.appendRow(tables_folder)
-                db_item.appendRow(views_folder)
-                db_item.appendRow(procedures_folder)
-                db_item.appendRow(functions_folder)
-                db_item.appendRow(triggers_folder)
-                
-                self.model.appendRow(db_item)
-                
+                for folder_name, folder_tag in folders:
+                    folder_id = self.insert(db_id, 'end', text=folder_name, tags=(folder_tag,))
+        
         except Exception as e:
             logging.error(f"Failed to load databases: {str(e)}")
-            QMessageBox.critical(self, "Error", f"Failed to load databases: {str(e)}")
-            
+            messagebox.showerror("Error", f"Failed to load databases: {str(e)}")
+    
     def refresh_database_objects(self, db_name):
+        """Refresh objects within a specific database"""
         if not self.connection or not self.connection.connected:
             return
-            
+        
         try:
             # Switch to the selected database
             self.connection.execute_query(f"USE {db_name}")
             
-            # Get tables
+            # Find the database node
+            db_node = None
+            for item in self.get_children():
+                if self.item(item, 'text') == db_name:
+                    db_node = item
+                    break
+            
+            if not db_node:
+                return
+            
+            # Refresh tables
+            tables_folder = self.get_children(db_node)[0]  # Assumes Tables is the first folder
+            self.delete(*self.get_children(tables_folder))
             tables = self.connection.execute_query("SHOW TABLES")
-            tables_folder = self.find_folder(db_name, "Tables")
-            if tables_folder:
-                tables_folder.removeRows(0, tables_folder.rowCount())
-                for table in tables:
-                    item = QStandardItem(table[0])
-                    item.setData("table", Qt.ItemDataRole.UserRole)
-                    tables_folder.appendRow(item)
-                    
-            # Get views
+            for table in tables:
+                self.insert(tables_folder, 'end', text=table[0], tags=('table',))
+            
+            # Refresh views
+            views_folder = self.get_children(db_node)[1]  # Assumes Views is the second folder
+            self.delete(*self.get_children(views_folder))
             views = self.connection.execute_query("SHOW FULL TABLES WHERE Table_type = 'VIEW'")
-            views_folder = self.find_folder(db_name, "Views")
-            if views_folder:
-                views_folder.removeRows(0, views_folder.rowCount())
-                for view in views:
-                    item = QStandardItem(view[0])
-                    item.setData("view", Qt.ItemDataRole.UserRole)
-                    views_folder.appendRow(item)
-                    
-            # Get procedures
+            for view in views:
+                self.insert(views_folder, 'end', text=view[0], tags=('view',))
+            
+            # Refresh procedures
+            procedures_folder = self.get_children(db_node)[2]  # Assumes Procedures is the third folder
+            self.delete(*self.get_children(procedures_folder))
             procedures = self.connection.execute_query(
                 "SELECT ROUTINE_NAME FROM INFORMATION_SCHEMA.ROUTINES "
                 "WHERE ROUTINE_TYPE='PROCEDURE' AND ROUTINE_SCHEMA=?", 
                 (db_name,)
             )
-            procedures_folder = self.find_folder(db_name, "Stored Procedures")
-            if procedures_folder:
-                procedures_folder.removeRows(0, procedures_folder.rowCount())
-                for proc in procedures:
-                    item = QStandardItem(proc[0])
-                    item.setData("procedure", Qt.ItemDataRole.UserRole)
-                    procedures_folder.appendRow(item)
-                    
+            for proc in procedures:
+                self.insert(procedures_folder, 'end', text=proc[0], tags=('procedure',))
+        
         except Exception as e:
             logging.error(f"Failed to load database objects: {str(e)}")
-            QMessageBox.critical(self, "Error", 
-                               f"Failed to load database objects: {str(e)}")
-            
-    def find_folder(self, db_name, folder_name):
-        for i in range(self.model.rowCount()):
-            db_item = self.model.item(i)
-            if db_item.text() == db_name:
-                for j in range(db_item.rowCount()):
-                    folder_item = db_item.child(j)
-                    if folder_item.text() == folder_name:
-                        return folder_item
-        return None
-        
-    def on_item_clicked(self, index):
-        item = self.model.itemFromIndex(index)
-        if not item:
+            messagebox.showerror("Error", f"Failed to load database objects: {str(e)}")
+    
+    def on_item_selected(self, event=None):
+        """Handle item selection"""
+        selected_items = self.selection()
+        if not selected_items:
             return
-            
-        item_type = item.data(Qt.ItemDataRole.UserRole)
-        if item_type in ["table", "view", "procedure", "function"]:
-            self.item_selected.emit(item_type, item.text())
-            
-    def show_context_menu(self, position):
-        index = self.indexAt(position)
-        if not index.isValid():
+        
+        selected_item = selected_items[0]
+        item_text = self.item(selected_item, 'text')
+        item_tags = self.item(selected_item, 'tags')
+        
+        # Trigger appropriate action based on item type
+        if item_tags and len(item_tags) > 0:
+            item_type = item_tags[0]
+            if item_type in ['table', 'view', 'procedure', 'function']:
+                # You might want to emit a custom event or call a callback
+                self.event_generate('<<DatabaseObjectSelected>>', 
+                                    when='tail', 
+                                    data=(item_type, item_text))
+    
+    def show_context_menu(self, event):
+        """Show context menu for selected item"""
+        # Clear previous menu
+        self.context_menu.delete(0, 'end')
+        
+        # Get item under cursor
+        iid = self.identify_row(event.y)
+        if not iid:
             return
-            
-        item = self.model.itemFromIndex(index)
-        item_type = item.data(Qt.ItemDataRole.UserRole)
         
-        menu = QMenu()
+        # Select the item
+        self.selection_set(iid)
         
-        if item_type == "database":
-            menu.addAction("Refresh", lambda: self.refresh_database_objects(item.text()))
-            menu.addSeparator()
-            menu.addAction("Create Database...")
-            menu.addAction("Drop Database...")
-            
-        elif item_type == "table":
-            menu.addAction("Open Table", lambda: self.item_selected.emit("table", item.text()))
-            menu.addAction("Design Table...")
-            menu.addSeparator()
-            menu.addAction("Create Table...")
-            menu.addAction("Drop Table...")
-            menu.addSeparator()
-            menu.addAction("Truncate Table...")
-            menu.addAction("Rename Table...")
-            
-        elif item_type == "view":
-            menu.addAction("Open View", lambda: self.item_selected.emit("view", item.text()))
-            menu.addAction("Design View...")
-            menu.addSeparator()
-            menu.addAction("Create View...")
-            menu.addAction("Drop View...")
-            
-        elif item_type == "procedure":
-            menu.addAction("Edit Procedure...", 
-                         lambda: self.item_selected.emit("procedure", item.text()))
-            menu.addSeparator()
-            menu.addAction("Create Procedure...")
-            menu.addAction("Drop Procedure...")
-            
-        if menu.actions():
-            menu.exec(self.viewport().mapToGlobal(position))
+        # Determine item type
+        item_text = self.item(iid, 'text')
+        item_tags = self.item(iid, 'tags')
+        
+        if not item_tags:
+            return
+        
+        item_type = item_tags[0]
+        
+        # Populate context menu based on item type
+        if item_type == 'database':
+            self.context_menu.add_command(
+                label="Refresh", 
+                command=lambda: self.refresh_database_objects(item_text)
+            )
+            self.context_menu.add_separator()
+            self.context_menu.add_command(label="Create Database...")
+            self.context_menu.add_command(label="Drop Database...")
+        
+        elif item_type == 'table':
+            self.context_menu.add_command(
+                label="Open Table", 
+                command=lambda: self.event_generate('<<DatabaseObjectSelected>>', 
+                                                   when='tail', 
+                                                   data=('table', item_text))
+            )
+            self.context_menu.add_command(label="Design Table...")
+            self.context_menu.add_separator()
+            self.context_menu.add_command(label="Create Table...")
+            self.context_menu.add_command(label="Drop Table...")
+            self.context_menu.add_separator()
+            self.context_menu.add_command(label="Truncate Table...")
+            self.context_menu.add_command(label="Rename Table...")
+        
+        elif item_type == 'view':
+            self.context_menu.add_command(
+                label="Open View", 
+                command=lambda: self.event_generate('<<DatabaseObjectSelected>>', 
+                                                   when='tail', 
+                                                   data=('view', item_text))
+            )
+            self.context_menu.add_command(label="Design View...")
+            self.context_menu.add_separator()
+            self.context_menu.add_command(label="Create View...")
+            self.context_menu.add_command(label="Drop View...")
+        
+        elif item_type == 'procedure':
+            self.context_menu.add_command(
+                label="Edit Procedure", 
+                command=lambda: self.event_generate('<<DatabaseObjectSelected>>', 
+                                                   when='tail', 
+                                                   data=('procedure', item_text))
+            )
+            self.context_menu.add_separator()
+            self.context_menu.add_command(label="Create Procedure...")
+            self.context_menu.add_command(label="Drop Procedure...")
+        
+        # Display the context menu
+        self.context_menu.post(event.x_root, event.y_root)
+
+def create_database_browser(parent, connection):
+    """
+    Convenience function to create and return a database browser
+    
+    :param parent: Parent widget
+    :param connection: Database connection object
+    :return: DatabaseBrowser instance
+    """
+    return DatabaseBrowser(parent, connection)

@@ -1,12 +1,15 @@
-from PyQt6.QtWidgets import QCompleter
-from PyQt6.QtCore import Qt, QStringListModel
+import tkinter as tk
+import re
 
-class SQLCompleter(QCompleter):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
-        self.setModelSorting(QCompleter.ModelSorting.CaseInsensitivelySortedModel)
-        self.setWrapAround(False)
+class SQLCompleter(tk.Listbox):
+    def __init__(self, parent=None, **kwargs):
+        super().__init__(parent, **kwargs)
+        
+        # Configure listbox
+        self.config(
+            selectmode=tk.SINGLE,
+            exportselection=False
+        )
         
         # Initialize with basic SQL keywords
         self.keywords = [
@@ -31,15 +34,25 @@ class SQLCompleter(QCompleter):
             'DEFAULT', 'AUTO_INCREMENT', 'INDEX', 'REFERENCES'
         ]
         
-        self.update_model()
+        # Populate initial keywords
+        self.update_keywords()
         
-    def update_model(self, additional_words=None):
-        """Update the completer model with additional words"""
+        # Bind events
+        self.bind('<KeyRelease>', self._on_key_release)
+        
+    def update_keywords(self, additional_words=None):
+        """Update the listbox with keywords"""
+        # Clear existing items
+        self.delete(0, tk.END)
+        
+        # Combine base keywords with additional words
         words = self.keywords.copy()
         if additional_words:
             words.extend(additional_words)
-        model = QStringListModel(words)
-        self.setModel(model)
+        
+        # Sort and insert words
+        for word in sorted(set(words), key=str.lower):
+            self.insert(tk.END, word)
         
     def update_database_objects(self, connection):
         """Update completer with database objects"""
@@ -60,8 +73,56 @@ class SQLCompleter(QCompleter):
             for column in columns:
                 additional_words.append(column[0])
                 
-            self.update_model(additional_words)
+            self.update_keywords(additional_words)
             
         except Exception:
             # If failed to get database objects, just use basic keywords
-            self.update_model()
+            self.update_keywords()
+    
+    def _on_key_release(self):
+        """Handle key release event for filtering"""
+        # Get current text from the associated text widget
+        if hasattr(self, 'associated_text_widget'):
+            text_widget = self.associated_text_widget
+            current_text = text_widget.get('insert linestart', 'insert')
+            
+            # Extract the last word
+            words = re.findall(r'\b\w+\b', current_text)
+            last_word = words[-1] if words else ''
+            
+            # Filter keywords
+            self.delete(0, tk.END)
+            matching_keywords = [
+                keyword for keyword in self.keywords 
+                if keyword.lower().startswith(last_word.lower())
+            ]
+            
+            for keyword in sorted(matching_keywords, key=str.lower):
+                self.insert(tk.END, keyword)
+    
+    def bind_to_text_widget(self, text_widget):
+        """Bind the completer to a text widget for auto-completion"""
+        self.associated_text_widget = text_widget
+        
+        def on_text_change(event):
+            self._on_key_release()
+        
+        text_widget.bind('<KeyRelease>', on_text_change)
+        
+        def on_listbox_select(event):
+            if self.curselection():
+                selected_keyword = self.get(self.curselection())
+                current_pos = text_widget.index(tk.INSERT)
+                
+                # Replace the last word with the selected keyword
+                text_widget.delete('insert linestart', current_pos)
+                text_widget.insert(current_pos, selected_keyword)
+        
+        self.bind('<<ListboxSelect>>', on_listbox_select)
+    
+    def get_suggestions(self, partial_word):
+        """Return a list of keyword suggestions for a partial word"""
+        return [
+            keyword for keyword in self.keywords 
+            if keyword.lower().startswith(partial_word.lower())
+        ]

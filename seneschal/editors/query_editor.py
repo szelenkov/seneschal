@@ -1,138 +1,146 @@
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, 
-                           QPlainTextEdit, QPushButton, QToolBar,
-                           QSplitter, QTableView, QLabel)
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QTextCursor
+import tkinter as tk
+import tkinter.font as tkfont
+import tkinter.scrolledtext as scrolledtext
+import tkinter.ttk as ttk
 
 from ..utils.settings_manager import SettingsManager
-from ..utils.theme_manager import SQLHighlighter, ThemeManager
+from ..utils.theme_manager import ThemeManager
 
-class QueryEditor(QWidget):
-    query_executed = pyqtSignal(str)  # Signal emitted when query is executed
 
+class QueryEditor(tk.Frame):
     def __init__(self, connection=None, parent=None):
         super().__init__(parent)
         self.connection = connection
         self.settings = SettingsManager()
+        self.theme_manager = ThemeManager()
         self.setup_ui()
         self.update_editor_settings()
 
     def setup_ui(self):
-        layout = QVBoxLayout(self)
-        
+        # Main layout
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+
         # Toolbar
-        toolbar = QToolBar()
-        
-        self.execute_btn = QPushButton("Execute")
-        self.execute_btn.clicked.connect(self.execute_query)
-        toolbar.addWidget(self.execute_btn)
-        
-        self.clear_btn = QPushButton("Clear")
-        self.clear_btn.clicked.connect(self.clear_editor)
-        toolbar.addWidget(self.clear_btn)
-        
-        layout.addWidget(toolbar)
-        
-        # Main splitter
-        splitter = QSplitter(Qt.Orientation.Vertical)
-        
-        # Query editor
-        self.editor = QPlainTextEdit()
-        self.highlighter = SQLHighlighter(self.editor.document())
-        splitter.addWidget(self.editor)
-        
+        toolbar = ttk.Frame(self)
+        toolbar.grid(row=0, column=0, sticky='ew', padx=5, pady=5)
+
+        # Execute button
+        self.execute_btn = ttk.Button(toolbar, text="Execute", command=self.execute_query)
+        self.execute_btn.pack(side=tk.LEFT, padx=5)
+
+        # Clear button
+        self.clear_btn = ttk.Button(toolbar, text="Clear", command=self.clear_editor)
+        self.clear_btn.pack(side=tk.LEFT, padx=5)
+
+        # Query editor (with scrollbars)
+        editor_frame = ttk.Frame(self)
+        editor_frame.grid(row=1, column=0, sticky='nsew', padx=5, pady=5)
+        editor_frame.grid_columnconfigure(0, weight=1)
+        editor_frame.grid_rowconfigure(0, weight=1)
+
+        self.editor = scrolledtext.ScrolledText(
+            editor_frame, 
+            wrap=tk.WORD, 
+            height=10, 
+            width=80
+        )
+        self.editor.grid(row=0, column=0, sticky='nsew')
+
         # Results area
-        self.results_widget = QWidget()
-        results_layout = QVBoxLayout(self.results_widget)
-        
-        # Results table
-        self.results_table = QTableView()
-        results_layout.addWidget(self.results_table)
-        
+        results_frame = ttk.Frame(self)
+        results_frame.grid(row=2, column=0, sticky='nsew', padx=5, pady=5)
+        results_frame.grid_columnconfigure(0, weight=1)
+
+        # Results treeview
+        self.results_table = ttk.Treeview(results_frame)
+        self.results_table.grid(row=0, column=0, sticky='nsew')
+
+        # Scrollbar for results
+        results_scrollbar = ttk.Scrollbar(results_frame, orient=tk.VERTICAL, command=self.results_table.yview)
+        results_scrollbar.grid(row=0, column=1, sticky='ns')
+        self.results_table.configure(yscrollcommand=results_scrollbar.set)
+
         # Status label
-        self.status_label = QLabel()
-        results_layout.addWidget(self.status_label)
-        
-        splitter.addWidget(self.results_widget)
-        
-        # Set initial sizes (60% editor, 40% results)
-        splitter.setSizes([600, 400])
-        
-        layout.addWidget(splitter)
+        self.status_label = ttk.Label(results_frame, text="")
+        self.status_label.grid(row=1, column=0, sticky='w', padx=5, pady=5)
 
     def update_editor_settings(self):
         """Update editor settings based on preferences"""
         editor_settings = self.settings.get_editor_settings()
         
         # Set font
-        font = QFont(editor_settings['font_family'], editor_settings['font_size'])
-        self.editor.setFont(font)
+        font = tkfont.Font(
+            family=editor_settings['font_family'], 
+            size=editor_settings['font_size']
+        )
+        self.editor.configure(font=font)
         
         # Word wrap
-        self.editor.setLineWrapMode(
-            QPlainTextEdit.LineWrapMode.WidgetWidth if editor_settings['word_wrap']
-            else QPlainTextEdit.LineWrapMode.NoWrap
+        self.editor.configure(
+            wrap='word' if editor_settings['word_wrap'] else 'none'
         )
         
         # Tab settings
+        tab_size = editor_settings['tab_size']
         if editor_settings['use_spaces']:
-            self.editor.setTabStopDistance(
-                editor_settings['tab_size'] * self.editor.fontMetrics().horizontalAdvance(' ')
-            )
-        
-        # Line numbers and current line highlighting are handled by the custom editor
-        
-        # Update syntax highlighting
-        self.highlighter.update_theme()
-        
-        # Apply editor style
-        self.editor.setStyleSheet(ThemeManager.get_editor_style())
+            self.editor.configure(tabs=f'{tab_size}c')
+
+        # Apply theme
+        theme_colors = self.theme_manager.get_syntax_colors()
+        self.editor.configure(
+            background=self.theme_manager.theme_colors['background'],
+            foreground=self.theme_manager.theme_colors['foreground']
+        )
 
     def execute_query(self):
         """Execute the current query"""
         if not self.connection:
-            self.status_label.setText("No database connection")
+            self.status_label.configure(text="No database connection")
             return
             
-        query = self.editor.textCursor().selectedText()
+        query = self.editor.get("1.0", tk.END).strip()
         if not query:
-            query = self.editor.toPlainText()
-            
-        if not query.strip():
             return
             
         try:
             result = self.connection.execute_query(query)
             
+            # Clear previous results
+            for i in self.results_table.get_children():
+                self.results_table.delete(i)
+            
             if result:
-                # Update results table
-                from PyQt6.QtGui import QStandardItemModel, QStandardItem
-                
-                model = QStandardItemModel()
-                
                 # Set headers
-                headers = list(result.keys())
-                model.setHorizontalHeaderLabels(headers)
+                headers = list(result[0].keys()) if result else []
+                self.results_table['columns'] = headers
+                
+                # Configure column headings
+                for header in headers:
+                    self.results_table.heading(header, text=header)
+                    self.results_table.column(header, anchor='w')
                 
                 # Add data
                 for row in result:
-                    items = [QStandardItem(str(val) if val is not None 
-                            else self.settings.get('data/null_display', 'NULL'))
-                            for val in row]
-                    model.appendRow(items)
+                    values = [str(row.get(header, '')) for header in headers]
+                    self.results_table.insert('', 'end', values=values)
                 
-                self.results_table.setModel(model)
-                self.status_label.setText(f"Query executed successfully. {model.rowCount()} rows returned.")
+                self.status_label.configure(
+                    text=f"Query executed successfully. {len(result)} rows returned."
+                )
             else:
-                self.status_label.setText("Query executed successfully. No results returned.")
+                self.status_label.configure(
+                    text="Query executed successfully. No results returned."
+                )
                 
-            self.query_executed.emit(query)
-            
         except Exception as e:
-            self.status_label.setText(f"Error executing query: {str(e)}")
+            self.status_label.configure(text=f"Error executing query: {str(e)}")
 
     def clear_editor(self):
         """Clear the query editor"""
-        self.editor.clear()
-        self.status_label.clear()
-        self.results_table.setModel(None)
+        self.editor.delete("1.0", tk.END)
+        self.status_label.configure(text="")
+        
+        # Clear results table
+        for i in self.results_table.get_children():
+            self.results_table.delete(i)

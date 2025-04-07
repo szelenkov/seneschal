@@ -15,18 +15,21 @@ A Python port of the popular Seneschal database management tool, providing a mod
 ## Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/yourusername/seneschal-python.git
 cd seneschal-python
 ```
 
-2. Create a virtual environment and activate it:
+1. Create a virtual environment and activate it:
+
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-3. Install dependencies:
+1. Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -40,6 +43,7 @@ python -m seneschal.main
 ## Development Setup
 
 This project uses:
+
 - Python 3.8+
 - PyQt6 for the GUI
 - SQLAlchemy for database operations

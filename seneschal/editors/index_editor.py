@@ -1,11 +1,7 @@
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, 
-                           QPushButton, QTableView, QToolBar,
-                           QMessageBox, QDialog, QFormLayout,
-                           QLineEdit, QComboBox, QListWidget)
-from PyQt6.QtGui import QStandardItemModel, QStandardItem
-from PyQt6.QtCore import Qt, pyqtSignal
+import tkinter as tk
+from tkinter import messagebox, ttk
 
-class IndexEditorDialog(QDialog):
+class IndexEditorDialog(tk.Toplevel):
     def __init__(self, parent=None, index_data=None, available_columns=None):
         super().__init__(parent)
         self.index_data = index_data or {}
@@ -13,51 +9,59 @@ class IndexEditorDialog(QDialog):
         self.setup_ui()
         
     def setup_ui(self):
-        self.setWindowTitle("Index Editor")
-        self.setMinimumWidth(400)
-        layout = QFormLayout(self)
+        self.title("Index Editor")
+        self.minsize(400, 300)
         
-        # Index name
-        self.name_edit = QLineEdit(self.index_data.get('name', ''))
-        layout.addRow("Name:", self.name_edit)
+        # Main frame
+        main_frame = tk.Frame(self)
+        main_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
         
-        # Index type
-        self.type_combo = QComboBox()
-        self.type_combo.addItems(['PRIMARY', 'UNIQUE', 'INDEX', 'FULLTEXT'])
-        if 'type' in self.index_data:
-            self.type_combo.setCurrentText(self.index_data['type'])
-        layout.addRow("Type:", self.type_combo)
+        # Name
+        tk.Label(main_frame, text="Name:").pack(anchor='w')
+        self.name_edit = tk.Entry(main_frame)
+        self.name_edit.insert(0, self.index_data.get('name', ''))
+        self.name_edit.pack(fill=tk.X, pady=(0, 10))
+        
+        # Type
+        tk.Label(main_frame, text="Type:").pack(anchor='w')
+        self.type_var = tk.StringVar(value=self.index_data.get('type', 'INDEX'))
+        self.type_combo = ttk.Combobox(main_frame, textvariable=self.type_var, 
+                                       values=['PRIMARY', 'UNIQUE', 'INDEX', 'FULLTEXT'], 
+                                       state='readonly')
+        self.type_combo.pack(fill=tk.X, pady=(0, 10))
         
         # Columns
-        self.columns_list = QListWidget()
-        self.columns_list.setSelectionMode(QListWidget.SelectionMode.MultiSelection)
+        tk.Label(main_frame, text="Columns:").pack(anchor='w')
+        self.columns_list = tk.Listbox(main_frame, selectmode=tk.MULTIPLE)
         for column in self.available_columns:
-            self.columns_list.addItem(column)
+            self.columns_list.insert(tk.END, column)
             if column in self.index_data.get('columns', []):
-                self.columns_list.item(self.columns_list.count() - 1).setSelected(True)
-        layout.addRow("Columns:", self.columns_list)
+                index = self.available_columns.index(column)
+                self.columns_list.selection_set(index)
+        self.columns_list.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
         
         # Buttons
-        button_layout = QHBoxLayout()
-        save_button = QPushButton("Save")
-        save_button.clicked.connect(self.accept)
-        cancel_button = QPushButton("Cancel")
-        cancel_button.clicked.connect(self.reject)
+        button_frame = tk.Frame(main_frame)
+        button_frame.pack(fill=tk.X)
         
-        button_layout.addWidget(save_button)
-        button_layout.addWidget(cancel_button)
-        layout.addRow("", button_layout)
+        save_button = tk.Button(button_frame, text="Save", command=self.on_save)
+        save_button.pack(side=tk.LEFT, expand=True, padx=5)
+        
+        cancel_button = tk.Button(button_frame, text="Cancel", command=self.destroy)
+        cancel_button.pack(side=tk.LEFT, expand=True, padx=5)
+        
+    def on_save(self):
+        self.result = {
+            'name': self.name_edit.get(),
+            'type': self.type_combo.get(),
+            'columns': [self.available_columns[i] for i in self.columns_list.curselection()]
+        }
+        self.destroy()
         
     def get_index_data(self):
-        return {
-            'name': self.name_edit.text(),
-            'type': self.type_combo.currentText(),
-            'columns': [item.text() for item in self.columns_list.selectedItems()]
-        }
+        return getattr(self, 'result', None)
 
-class IndexEditor(QWidget):
-    index_changed = pyqtSignal()
-    
+class IndexEditor(tk.Frame):
     def __init__(self, parent=None, connection=None, table_name=None):
         super().__init__(parent)
         self.connection = connection
@@ -67,33 +71,26 @@ class IndexEditor(QWidget):
             self.load_indexes()
             
     def setup_ui(self):
-        layout = QVBoxLayout(self)
-        
         # Toolbar
-        toolbar = QToolBar()
+        toolbar = tk.Frame(self)
+        toolbar.pack(fill=tk.X)
         
-        self.add_index_btn = QPushButton("Add Index")
-        self.add_index_btn.clicked.connect(self.add_index)
-        toolbar.addWidget(self.add_index_btn)
+        self.add_index_btn = tk.Button(toolbar, text="Add Index", command=self.add_index)
+        self.add_index_btn.pack(side=tk.LEFT, padx=5, pady=5)
         
-        self.edit_index_btn = QPushButton("Edit Index")
-        self.edit_index_btn.clicked.connect(self.edit_index)
-        toolbar.addWidget(self.edit_index_btn)
+        self.edit_index_btn = tk.Button(toolbar, text="Edit Index", command=self.edit_index)
+        self.edit_index_btn.pack(side=tk.LEFT, padx=5, pady=5)
         
-        self.delete_index_btn = QPushButton("Delete Index")
-        self.delete_index_btn.clicked.connect(self.delete_index)
-        toolbar.addWidget(self.delete_index_btn)
-        
-        layout.addWidget(toolbar)
+        self.delete_index_btn = tk.Button(toolbar, text="Delete Index", command=self.delete_index)
+        self.delete_index_btn.pack(side=tk.LEFT, padx=5, pady=5)
         
         # Index view
-        self.index_view = QTableView()
-        self.index_model = QStandardItemModel()
-        self.index_model.setHorizontalHeaderLabels([
-            "Name", "Type", "Columns", "Comment"
-        ])
-        self.index_view.setModel(self.index_model)
-        layout.addWidget(self.index_view)
+        self.index_view = ttk.Treeview(self, columns=("Name", "Type", "Columns", "Comment"), show='headings')
+        self.index_view.heading("Name", text="Name")
+        self.index_view.heading("Type", text="Type")
+        self.index_view.heading("Columns", text="Columns")
+        self.index_view.heading("Comment", text="Comment")
+        self.index_view.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
     def get_available_columns(self):
         try:
@@ -113,6 +110,10 @@ class IndexEditor(QWidget):
             return
             
         try:
+            # Clear existing items
+            for item in self.index_view.get_children():
+                self.index_view.delete(item)
+            
             # Get index information
             query = f"SHOW INDEX FROM {self.table_name}"
             result = self.connection.execute_query(query)
@@ -131,116 +132,118 @@ class IndexEditor(QWidget):
                     }
                 indexes[index_name]['columns'].append(row[4])  # Column_name
                 
-            # Update model
-            self.index_model.setRowCount(0)
+            # Update view
             for index in indexes.values():
-                items = [
-                    QStandardItem(index['name']),
-                    QStandardItem(index['type']),
-                    QStandardItem(', '.join(index['columns'])),
-                    QStandardItem(index['comment'])
-                ]
-                self.index_model.appendRow(items)
+                self.index_view.insert('', 'end', values=(
+                    index['name'], 
+                    index['type'], 
+                    ', '.join(index['columns']), 
+                    index['comment']
+                ))
                 
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to load indexes: {str(e)}")
+            messagebox.showerror("Error", f"Failed to load indexes: {str(e)}")
             
     def add_index(self):
         available_columns = self.get_available_columns()
         dialog = IndexEditorDialog(self, available_columns=available_columns)
-        if dialog.exec():
-            index_data = dialog.get_index_data()
-            try:
-                # Generate CREATE INDEX statement
-                if index_data['type'] == 'PRIMARY':
-                    query = f"""
-                        ALTER TABLE {self.table_name}
-                        ADD PRIMARY KEY ({', '.join(index_data['columns'])})
-                    """
-                else:
-                    index_type = 'UNIQUE ' if index_data['type'] == 'UNIQUE' else ''
-                    query = f"""
-                        CREATE {index_type}INDEX {index_data['name']}
-                        ON {self.table_name} ({', '.join(index_data['columns'])})
-                    """
-                
-                self.connection.execute_query(query)
-                self.load_indexes()
-                self.index_changed.emit()
-                
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to create index: {str(e)}")
+        dialog.transient(self)
+        dialog.grab_set()
+        self.wait_window(dialog)
+        
+        index_data = dialog.get_index_data()
+        if not index_data:
+            return
+        
+        try:
+            # Generate CREATE INDEX statement
+            if index_data['type'] == 'PRIMARY':
+                query = f"""
+                    ALTER TABLE {self.table_name}
+                    ADD PRIMARY KEY ({', '.join(index_data['columns'])})
+                """
+            else:
+                index_type = 'UNIQUE ' if index_data['type'] == 'UNIQUE' else ''
+                query = f"""
+                    CREATE {index_type}INDEX {index_data['name']}
+                    ON {self.table_name} ({', '.join(index_data['columns'])})
+                """
+            
+            self.connection.execute_query(query)
+            self.load_indexes()
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to create index: {str(e)}")
                 
     def edit_index(self):
-        current = self.index_view.currentIndex()
-        if not current.isValid():
+        selected_item = self.index_view.selection()
+        if not selected_item:
+            messagebox.showinfo("Info", "Please select an index to edit")
             return
             
-        row = current.row()
+        current_values = self.index_view.item(selected_item[0])['values']
         index_data = {
-            'name': self.index_model.item(row, 0).text(),
-            'type': self.index_model.item(row, 1).text(),
-            'columns': [col.strip() for col in 
-                       self.index_model.item(row, 2).text().split(',')]
+            'name': current_values[0],
+            'type': current_values[1],
+            'columns': [col.strip() for col in current_values[2].split(',')]
         }
         
         available_columns = self.get_available_columns()
         dialog = IndexEditorDialog(self, index_data, available_columns)
-        if dialog.exec():
-            new_data = dialog.get_index_data()
-            try:
-                # Drop old index
-                if index_data['type'] == 'PRIMARY':
-                    drop_query = f"ALTER TABLE {self.table_name} DROP PRIMARY KEY"
-                else:
-                    drop_query = f"DROP INDEX {index_data['name']} ON {self.table_name}"
-                    
-                # Create new index
-                if new_data['type'] == 'PRIMARY':
-                    create_query = f"""
-                        ALTER TABLE {self.table_name}
-                        ADD PRIMARY KEY ({', '.join(new_data['columns'])})
-                    """
-                else:
-                    index_type = 'UNIQUE ' if new_data['type'] == 'UNIQUE' else ''
-                    create_query = f"""
-                        CREATE {index_type}INDEX {new_data['name']}
-                        ON {self.table_name} ({', '.join(new_data['columns'])})
-                    """
-                
-                self.connection.execute_query(drop_query)
-                self.connection.execute_query(create_query)
-                self.load_indexes()
-                self.index_changed.emit()
-                
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to modify index: {str(e)}")
-                
-    def delete_index(self):
-        current = self.index_view.currentIndex()
-        if not current.isValid():
+        dialog.transient(self)
+        dialog.grab_set()
+        self.wait_window(dialog)
+        
+        new_data = dialog.get_index_data()
+        if not new_data:
             return
-            
-        index_name = self.index_model.item(current.row(), 0).text()
-        index_type = self.index_model.item(current.row(), 1).text()
         
-        reply = QMessageBox.question(
-            self,
-            "Confirm Delete",
-            f"Are you sure you want to delete index '{index_name}'?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-        
-        if reply == QMessageBox.StandardButton.Yes:
-            try:
-                if index_type == 'PRIMARY':
-                    query = f"ALTER TABLE {self.table_name} DROP PRIMARY KEY"
-                else:
-                    query = f"DROP INDEX {index_name} ON {self.table_name}"
-                    
-                self.connection.execute_query(query)
-                self.load_indexes()
-                self.index_changed.emit()
+        try:
+            # Drop old index
+            if index_data['type'] == 'PRIMARY':
+                drop_query = f"ALTER TABLE {self.table_name} DROP PRIMARY KEY"
+            else:
+                drop_query = f"DROP INDEX {index_data['name']} ON {self.table_name}"
                 
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to delete index: {str(e)}")
+            # Create new index
+            if new_data['type'] == 'PRIMARY':
+                create_query = f"""
+                    ALTER TABLE {self.table_name}
+                    ADD PRIMARY KEY ({', '.join(new_data['columns'])})
+                """
+            else:
+                index_type = 'UNIQUE ' if new_data['type'] == 'UNIQUE' else ''
+                create_query = f"""
+                    CREATE {index_type}INDEX {new_data['name']}
+                    ON {self.table_name} ({', '.join(new_data['columns'])})
+                """
+            
+            # Execute queries
+            self.connection.execute_query(drop_query)
+            self.connection.execute_query(create_query)
+            self.load_indexes()
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to edit index: {str(e)}")
+    
+    def delete_index(self):
+        selected_item = self.index_view.selection()
+        if not selected_item:
+            messagebox.showinfo("Info", "Please select an index to delete")
+            return
+        
+        current_values = self.index_view.item(selected_item[0])['values']
+        index_name = current_values[0]
+        index_type = current_values[1]
+        
+        try:
+            if index_type == 'PRIMARY':
+                query = f"ALTER TABLE {self.table_name} DROP PRIMARY KEY"
+            else:
+                query = f"DROP INDEX {index_name} ON {self.table_name}"
+            
+            self.connection.execute_query(query)
+            self.load_indexes()
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to delete index: {str(e)}")

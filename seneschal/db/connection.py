@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any, List
+
 from sqlalchemy import create_engine, Engine, text
 from sqlalchemy.exc import SQLAlchemyError
+
 
 class DatabaseConnection(ABC):
     def __init__(self):

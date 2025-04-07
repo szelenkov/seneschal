@@ -1,77 +1,87 @@
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, 
-                           QPushButton, QTableView, QToolBar,
-                           QMessageBox, QDialog, QFormLayout,
-                           QLineEdit, QComboBox, QCheckBox)
-from PyQt6.QtGui import QStandardItemModel, QStandardItem
-from PyQt6.QtCore import Qt, pyqtSignal
+import tkinter as tk
+from tkinter import messagebox, ttk
 
-class ColumnEditorDialog(QDialog):
+class ColumnEditorDialog(tk.Toplevel):
     def __init__(self, parent=None, column_data=None):
         super().__init__(parent)
         self.column_data = column_data or {}
         self.setup_ui()
         
     def setup_ui(self):
-        self.setWindowTitle("Column Editor")
-        layout = QFormLayout(self)
+        self.title("Column Editor")
+        self.minsize(400, 400)
+        
+        # Main frame
+        main_frame = tk.Frame(self)
+        main_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
         
         # Column name
-        self.name_edit = QLineEdit(self.column_data.get('name', ''))
-        layout.addRow("Name:", self.name_edit)
+        tk.Label(main_frame, text="Name:").pack(anchor='w')
+        self.name_edit = tk.Entry(main_frame)
+        self.name_edit.insert(0, self.column_data.get('name', ''))
+        self.name_edit.pack(fill=tk.X, pady=(0, 10))
         
         # Data type
-        self.type_combo = QComboBox()
-        self.type_combo.addItems([
-            'INT', 'BIGINT', 'FLOAT', 'DOUBLE', 'DECIMAL',
-            'CHAR', 'VARCHAR', 'TEXT', 'DATE', 'DATETIME',
-            'TIMESTAMP', 'BOOLEAN', 'BLOB'
-        ])
-        if 'type' in self.column_data:
-            self.type_combo.setCurrentText(self.column_data['type'])
-        layout.addRow("Type:", self.type_combo)
+        tk.Label(main_frame, text="Type:").pack(anchor='w')
+        self.type_var = tk.StringVar(value=self.column_data.get('type', 'VARCHAR'))
+        self.type_combo = ttk.Combobox(main_frame, textvariable=self.type_var, 
+                                       values=[
+                                           'INT', 'BIGINT', 'FLOAT', 'DOUBLE', 'DECIMAL',
+                                           'CHAR', 'VARCHAR', 'TEXT', 'DATE', 'DATETIME',
+                                           'TIMESTAMP', 'BOOLEAN', 'BLOB'
+                                       ], 
+                                       state='readonly')
+        self.type_combo.pack(fill=tk.X, pady=(0, 10))
         
         # Length/Values
-        self.length_edit = QLineEdit(self.column_data.get('length', ''))
-        layout.addRow("Length/Values:", self.length_edit)
+        tk.Label(main_frame, text="Length/Values:").pack(anchor='w')
+        self.length_edit = tk.Entry(main_frame)
+        self.length_edit.insert(0, self.column_data.get('length', ''))
+        self.length_edit.pack(fill=tk.X, pady=(0, 10))
         
         # Not null
-        self.not_null = QCheckBox()
-        self.not_null.setChecked(self.column_data.get('not_null', False))
-        layout.addRow("Not Null:", self.not_null)
+        self.not_null_var = tk.BooleanVar(value=self.column_data.get('not_null', False))
+        self.not_null_check = tk.Checkbutton(main_frame, text="Not Null", 
+                                             variable=self.not_null_var)
+        self.not_null_check.pack(anchor='w', pady=(0, 10))
         
         # Default value
-        self.default_edit = QLineEdit(self.column_data.get('default', ''))
-        layout.addRow("Default:", self.default_edit)
+        tk.Label(main_frame, text="Default:").pack(anchor='w')
+        self.default_edit = tk.Entry(main_frame)
+        self.default_edit.insert(0, self.column_data.get('default', ''))
+        self.default_edit.pack(fill=tk.X, pady=(0, 10))
         
         # Auto increment
-        self.auto_increment = QCheckBox()
-        self.auto_increment.setChecked(self.column_data.get('auto_increment', False))
-        layout.addRow("Auto Increment:", self.auto_increment)
+        self.auto_increment_var = tk.BooleanVar(value=self.column_data.get('auto_increment', False))
+        self.auto_increment_check = tk.Checkbutton(main_frame, text="Auto Increment", 
+                                                   variable=self.auto_increment_var)
+        self.auto_increment_check.pack(anchor='w', pady=(0, 10))
         
         # Buttons
-        button_layout = QHBoxLayout()
-        save_button = QPushButton("Save")
-        save_button.clicked.connect(self.accept)
-        cancel_button = QPushButton("Cancel")
-        cancel_button.clicked.connect(self.reject)
+        button_frame = tk.Frame(main_frame)
+        button_frame.pack(fill=tk.X)
         
-        button_layout.addWidget(save_button)
-        button_layout.addWidget(cancel_button)
-        layout.addRow("", button_layout)
+        save_button = tk.Button(button_frame, text="Save", command=self.on_save)
+        save_button.pack(side=tk.LEFT, expand=True, padx=5)
+        
+        cancel_button = tk.Button(button_frame, text="Cancel", command=self.destroy)
+        cancel_button.pack(side=tk.LEFT, expand=True, padx=5)
+        
+    def on_save(self):
+        self.result = {
+            'name': self.name_edit.get(),
+            'type': self.type_combo.get(),
+            'length': self.length_edit.get(),
+            'not_null': self.not_null_var.get(),
+            'default': self.default_edit.get(),
+            'auto_increment': self.auto_increment_var.get()
+        }
+        self.destroy()
         
     def get_column_data(self):
-        return {
-            'name': self.name_edit.text(),
-            'type': self.type_combo.currentText(),
-            'length': self.length_edit.text(),
-            'not_null': self.not_null.isChecked(),
-            'default': self.default_edit.text(),
-            'auto_increment': self.auto_increment.isChecked()
-        }
+        return getattr(self, 'result', None)
 
-class StructureEditor(QWidget):
-    structure_changed = pyqtSignal()
-    
+class StructureEditor(tk.Frame):
     def __init__(self, parent=None, connection=None, table_name=None):
         super().__init__(parent)
         self.connection = connection
@@ -81,40 +91,40 @@ class StructureEditor(QWidget):
             self.load_structure()
             
     def setup_ui(self):
-        layout = QVBoxLayout(self)
-        
         # Toolbar
-        toolbar = QToolBar()
+        toolbar = tk.Frame(self)
+        toolbar.pack(fill=tk.X)
         
-        self.add_column_btn = QPushButton("Add Column")
-        self.add_column_btn.clicked.connect(self.add_column)
-        toolbar.addWidget(self.add_column_btn)
+        self.add_column_btn = tk.Button(toolbar, text="Add Column", command=self.add_column)
+        self.add_column_btn.pack(side=tk.LEFT, padx=5, pady=5)
         
-        self.edit_column_btn = QPushButton("Edit Column")
-        self.edit_column_btn.clicked.connect(self.edit_column)
-        toolbar.addWidget(self.edit_column_btn)
+        self.edit_column_btn = tk.Button(toolbar, text="Edit Column", command=self.edit_column)
+        self.edit_column_btn.pack(side=tk.LEFT, padx=5, pady=5)
         
-        self.delete_column_btn = QPushButton("Delete Column")
-        self.delete_column_btn.clicked.connect(self.delete_column)
-        toolbar.addWidget(self.delete_column_btn)
-        
-        layout.addWidget(toolbar)
+        self.delete_column_btn = tk.Button(toolbar, text="Delete Column", command=self.delete_column)
+        self.delete_column_btn.pack(side=tk.LEFT, padx=5, pady=5)
         
         # Structure view
-        self.structure_view = QTableView()
-        self.structure_model = QStandardItemModel()
-        self.structure_model.setHorizontalHeaderLabels([
+        self.structure_view = ttk.Treeview(self, columns=(
             "Name", "Type", "Length/Values", "Not Null", 
             "Default", "Auto Increment", "Comment"
-        ])
-        self.structure_view.setModel(self.structure_model)
-        layout.addWidget(self.structure_view)
+        ), show='headings')
+        
+        # Configure column headings
+        for col in self.structure_view['columns']:
+            self.structure_view.heading(col, text=col)
+        
+        self.structure_view.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
     def load_structure(self):
         if not self.connection or not self.table_name:
             return
             
         try:
+            # Clear existing items
+            for item in self.structure_view.get_children():
+                self.structure_view.delete(item)
+            
             # Get table structure
             query = f"""
                 SELECT COLUMN_NAME, DATA_TYPE, 
@@ -126,104 +136,106 @@ class StructureEditor(QWidget):
             """
             result = self.connection.execute_query(query)
             
-            self.structure_model.setRowCount(0)
             for row in result:
-                items = [
-                    QStandardItem(str(row[0])),  # Name
-                    QStandardItem(str(row[1])),  # Type
-                    QStandardItem(str(row[2]) if row[2] else ''),  # Length
-                    QStandardItem('NO' if row[3] == 'NO' else 'YES'),  # Nullable
-                    QStandardItem(str(row[4]) if row[4] else ''),  # Default
-                    QStandardItem('YES' if 'auto_increment' in str(row[5]).lower() else 'NO'),  # Auto Inc
-                    QStandardItem(str(row[6]))  # Comment
-                ]
-                self.structure_model.appendRow(items)
+                self.structure_view.insert('', 'end', values=(
+                    str(row[0]),  # Name
+                    str(row[1]),  # Type
+                    str(row[2]) if row[2] else '',  # Length
+                    'NO' if row[3] == 'NO' else 'YES',  # Nullable
+                    str(row[4]) if row[4] else '',  # Default
+                    'YES' if 'auto_increment' in str(row[5]).lower() else 'NO',  # Auto Inc
+                    str(row[6])  # Comment
+                ))
                 
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to load table structure: {str(e)}")
+            messagebox.showerror("Error", f"Failed to load table structure: {str(e)}")
             
     def add_column(self):
         dialog = ColumnEditorDialog(self)
-        if dialog.exec():
-            column_data = dialog.get_column_data()
-            try:
-                # Generate ALTER TABLE statement
-                length_str = f"({column_data['length']})" if column_data['length'] else ''
-                null_str = 'NOT NULL' if column_data['not_null'] else 'NULL'
-                default_str = f"DEFAULT {column_data['default']}" if column_data['default'] else ''
-                auto_inc_str = 'AUTO_INCREMENT' if column_data['auto_increment'] else ''
-                
-                query = f"""
-                    ALTER TABLE {self.table_name}
-                    ADD COLUMN {column_data['name']} {column_data['type']}{length_str}
-                    {null_str} {default_str} {auto_inc_str}
-                """
-                
-                self.connection.execute_query(query)
-                self.load_structure()
-                self.structure_changed.emit()
-                
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to add column: {str(e)}")
+        dialog.transient(self)
+        dialog.grab_set()
+        self.wait_window(dialog)
+        
+        column_data = dialog.get_column_data()
+        if not column_data:
+            return
+        
+        try:
+            # Generate ALTER TABLE statement
+            length_str = f"({column_data['length']})" if column_data['length'] else ''
+            null_str = 'NOT NULL' if column_data['not_null'] else 'NULL'
+            default_str = f"DEFAULT {column_data['default']}" if column_data['default'] else ''
+            auto_inc_str = 'AUTO_INCREMENT' if column_data['auto_increment'] else ''
+            
+            query = f"""
+                ALTER TABLE {self.table_name}
+                ADD COLUMN {column_data['name']} {column_data['type']}{length_str}
+                {null_str} {default_str} {auto_inc_str}
+            """
+            
+            self.connection.execute_query(query)
+            self.load_structure()
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to add column: {str(e)}")
                 
     def edit_column(self):
-        current = self.structure_view.currentIndex()
-        if not current.isValid():
+        selected_item = self.structure_view.selection()
+        if not selected_item:
+            messagebox.showinfo("Info", "Please select a column to edit")
             return
             
-        row = current.row()
+        current_values = self.structure_view.item(selected_item[0])['values']
         column_data = {
-            'name': self.structure_model.item(row, 0).text(),
-            'type': self.structure_model.item(row, 1).text(),
-            'length': self.structure_model.item(row, 2).text(),
-            'not_null': self.structure_model.item(row, 3).text() == 'NO',
-            'default': self.structure_model.item(row, 4).text(),
-            'auto_increment': self.structure_model.item(row, 5).text() == 'YES'
+            'name': current_values[0],
+            'type': current_values[1],
+            'length': current_values[2],
+            'not_null': current_values[3] == 'NO',
+            'default': current_values[4],
+            'auto_increment': current_values[5] == 'YES'
         }
         
         dialog = ColumnEditorDialog(self, column_data)
-        if dialog.exec():
-            new_data = dialog.get_column_data()
-            try:
-                # Generate ALTER TABLE statement
-                length_str = f"({new_data['length']})" if new_data['length'] else ''
-                null_str = 'NOT NULL' if new_data['not_null'] else 'NULL'
-                default_str = f"DEFAULT {new_data['default']}" if new_data['default'] else ''
-                auto_inc_str = 'AUTO_INCREMENT' if new_data['auto_increment'] else ''
-                
-                query = f"""
-                    ALTER TABLE {self.table_name}
-                    MODIFY COLUMN {new_data['name']} {new_data['type']}{length_str}
-                    {null_str} {default_str} {auto_inc_str}
-                """
-                
-                self.connection.execute_query(query)
-                self.load_structure()
-                self.structure_changed.emit()
-                
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to modify column: {str(e)}")
-                
-    def delete_column(self):
-        current = self.structure_view.currentIndex()
-        if not current.isValid():
+        dialog.transient(self)
+        dialog.grab_set()
+        self.wait_window(dialog)
+        
+        new_data = dialog.get_column_data()
+        if not new_data:
             return
+        
+        try:
+            # Generate ALTER TABLE statement
+            length_str = f"({new_data['length']})" if new_data['length'] else ''
+            null_str = 'NOT NULL' if new_data['not_null'] else 'NULL'
+            default_str = f"DEFAULT {new_data['default']}" if new_data['default'] else ''
+            auto_inc_str = 'AUTO_INCREMENT' if new_data['auto_increment'] else ''
             
-        column_name = self.structure_model.item(current.row(), 0).text()
+            query = f"""
+                ALTER TABLE {self.table_name}
+                MODIFY COLUMN {new_data['name']} {new_data['type']}{length_str}
+                {null_str} {default_str} {auto_inc_str}
+            """
+            
+            self.connection.execute_query(query)
+            self.load_structure()
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to modify column: {str(e)}")
+    
+    def delete_column(self):
+        selected_item = self.structure_view.selection()
+        if not selected_item:
+            messagebox.showinfo("Info", "Please select a column to delete")
+            return
         
-        reply = QMessageBox.question(
-            self,
-            "Confirm Delete",
-            f"Are you sure you want to delete column '{column_name}'?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
+        column_name = self.structure_view.item(selected_item[0])['values'][0]
         
-        if reply == QMessageBox.StandardButton.Yes:
-            try:
-                query = f"ALTER TABLE {self.table_name} DROP COLUMN {column_name}"
-                self.connection.execute_query(query)
-                self.load_structure()
-                self.structure_changed.emit()
-                
-            except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to delete column: {str(e)}")
+        try:
+            query = f"ALTER TABLE {self.table_name} DROP COLUMN {column_name}"
+            
+            self.connection.execute_query(query)
+            self.load_structure()
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to delete column: {str(e)}")
