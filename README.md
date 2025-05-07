@@ -5,7 +5,7 @@ A Python port of the popular Seneschal database management tool, providing a mod
 ## Features
 
 - Multi-database system support (MySQL, PostgreSQL, SQLite, MS SQL Server)
-- Modern PyQt6-based user interface
+- Modern python user interface
 - Database connection management
 - SQL query execution
 - Database structure browsing
@@ -44,8 +44,7 @@ python -m seneschal.main
 
 This project uses:
 
-- Python 3.8+
-- PyQt6 for the GUI
+- Python 3.11+
 - SQLAlchemy for database operations
 - Various database drivers (mysql-connector-python, psycopg2, etc.)
 
@@ -64,4 +63,4 @@ This project is licensed under the GPL License - see the LICENSE file for detail
 ## Acknowledgments
 
 - Original Seneschal project and its contributors
-- PyQt and SQLAlchemy communities
+- SQLAlchemy communities
