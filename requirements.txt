@@ -2,8 +2,9 @@ SQLAlchemy>=2.0.0
 mysql-connector-python>=8.0.0
 psycopg2-binary>=2.9.0
 pyodbc>=4.0.0
-sqlite3-api>=2.0.0
 cryptography>=44.0.0
 python-dotenv>=1.0.0
-ttkbootstrap
-configparser
+ttkbootstrap>=1.6.0
+Pygments>=2.14.0
+openpyxl>=3.1.5
+configparser>=5.3.0
