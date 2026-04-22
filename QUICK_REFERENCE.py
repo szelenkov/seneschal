@@ -11,9 +11,9 @@ Version 0.1.0 - Alpha Phase
 # SETUP (First Time)
 # ============================================================================
 """
-cd ~\seneschal
+cd ~\\seneschal
 python -m venv venv
-venv\Scripts\activate
+venv\\Scripts\\activate
 pip install -r requirements.txt
 pip install -e .
 """

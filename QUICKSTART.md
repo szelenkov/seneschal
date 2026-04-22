@@ -112,13 +112,13 @@ seneschal-python
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-| --- | --- |
-| Ctrl+Enter | Execute query |
-| Ctrl+N | New query tab |
-| Ctrl+W | Close query tab |
-| Ctrl+E | Export results |
-| Ctrl+H | Show query history |
+| Shortcut   | Action             |
+|------------|--------------------|
+| Ctrl+Enter | Execute query      |
+| Ctrl+N     | New query tab      |
+| Ctrl+W     | Close query tab    |
+| Ctrl+E     | Export results     |
+| Ctrl+H     | Show query history |
 
 ## Configuration Files
 

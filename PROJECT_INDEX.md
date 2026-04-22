@@ -342,29 +342,29 @@ configparser>=5.3.0
 
 ### Module Breakdown
 
-| Module | Lines | Purpose |
-| -------- | ------- | --------- |
-| db/models.py | 340 | Data models |
-| db/providers.py | 650 | Database abstraction |
-| db/connection.py | 350 | Connection management |
-| ui/framework.py | 450 | UI framework |
-| ui/dialogs.py | 220 | Dialog windows |
-| ui/main_window.py | 380 | Main application |
-| tests/test_basic.py | 350 | Unit tests |
-| main.py | 50 | Bootstrap |
+| Module              | Lines | Purpose               |
+|---------------------|-------|-----------------------|
+| db/models.py        | 340   | Data models           |
+| db/providers.py     | 650   | Database abstraction  |
+| db/connection.py    | 350   | Connection management |
+| ui/framework.py     | 450   | UI framework          |
+| ui/dialogs.py       | 220   | Dialog windows        |
+| ui/main_window.py   | 380   | Main application      |
+| tests/test_basic.py | 350   | Unit tests            |
+| main.py             | 50    | Bootstrap             |
 
 ### Feature Matrix
 
-| Feature | Status | Lines |
-| --------- | -------- | ------- |
-| Connection Management | ✅ | 350 |
-| Query Execution | ✅ | 150 |
-| Schema Discovery | ✅ | 100 |
-| Credential Security | ✅ | 100 |
-| UI Framework | ✅ | 450 |
-| Dialogs | ✅ | 220 |
-| Multi-Database Support | ✅ | 650 |
-| Testing | ✅ | 350 |
+| Feature                | Status | Lines |
+|------------------------|--------|-------|
+| Connection Management  | ✅      | 350   |
+| Query Execution        | ✅      | 150   |
+| Schema Discovery       | ✅      | 100   |
+| Credential Security    | ✅      | 100   |
+| UI Framework           | ✅      | 450   |
+| Dialogs                | ✅      | 220   |
+| Multi-Database Support | ✅      | 650   |
+| Testing                | ✅      | 350   |
 
 ---
 

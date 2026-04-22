@@ -135,7 +135,6 @@ seneschal-python
 
 - **[QUICKSTART.md](./QUICKSTART.md)** - Quick start guide for end users
 - **[DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)** - Detailed architecture and development guide
-- **[CONVERSION_PROGRESS.md](./CONVERSION_PROGRESS.md)** - Migration progress and mapping
 
 ## 🗄️ Database Support
 
@@ -352,13 +351,13 @@ User sees databases and tables
 
 ## 🚦 Keyboard Shortcuts
 
-| Shortcut | Action |
-| --- | --- |
-| Ctrl+Enter | Execute query |
-| Ctrl+N | New query tab |
-| Ctrl+W | Close query tab |
-| Ctrl+E | Export results |
-| Ctrl+H | Show query history |
+| Shortcut   | Action             |
+|------------|--------------------|
+| Ctrl+Enter | Execute query      |
+| Ctrl+N     | New query tab      |
+| Ctrl+W     | Close query tab    |
+| Ctrl+E     | Export results     |
+| Ctrl+H     | Show query history |
 
 ## 📝 Migration Notes
 
@@ -449,7 +448,6 @@ This project is licensed under **GPL-2.0-or-later**.
 
 - See [QUICKSTART.md](./QUICKSTART.md) for user guide
 - See [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) for technical details
-- See [CONVERSION_PROGRESS.md](./CONVERSION_PROGRESS.md) for migration status
 
 ### Support
 
